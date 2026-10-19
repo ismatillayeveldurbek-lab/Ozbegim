@@ -169,6 +169,7 @@ export function SpellChecker() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Tekshiriladigan matnni yozing yoki joylashtiring…"
+              spellCheck={false}
             />
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-primary btn-sm" onClick={acceptAll} disabled={!suggestions.length || stale}>
