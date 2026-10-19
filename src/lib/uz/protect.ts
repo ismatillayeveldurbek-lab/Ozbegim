@@ -91,8 +91,8 @@ export function findProtectedRanges(text: string, options: ProtectOptions = DEFA
     for (const m of text.matchAll(/(?<![\\$\w])\$(?!\s)([^$\n]+?)(?<!\s)\$(?![\d$])/g)) {
       add(ranges, m.index!, m.index! + m[0].length, "formula", m[0]);
     }
-    // Jadval formulasi: qator "=" bilan boshlanib, ichida qavs bo‘lsa (=SUM(A1:A3)).
-    for (const m of text.matchAll(/(^|\n)(=[A-Za-z_][^\n]*\([^\n]*)/g)) {
+    // Jadval formulasi: qator "=" bilan boshlanib, ichida qavs bo‘lsa (=SUM(A1:A3)) yoki bo‘shliqsiz (=A1*2).
+    for (const m of text.matchAll(/(^|\n)(=[A-Za-z_$][^\n]*\([^\n]*|=[A-Za-z_$][^\s]*(?=\n|$))/g)) {
       const start = m.index! + m[1].length;
       add(ranges, start, start + m[2].length, "formula", m[2]);
     }
