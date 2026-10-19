@@ -116,7 +116,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href="/" className="lg:hidden" aria-label="Bosh sahifa">
               <Logo compact />
             </Link>
-            <h1 className="min-w-0 flex-1 truncate text-lg font-bold sm:text-xl">{title}</h1>
+            <h1 className="sr-only min-w-0 flex-1 truncate text-lg font-bold sm:not-sr-only sm:text-xl">{title}</h1>
+            <span className="flex-1 sm:hidden" aria-hidden />
             <GlobalSearch className="hidden w-80 md:block" />
             <Link href="/qidiruv" className="btn btn-ghost h-11 w-11 !p-0 md:hidden" aria-label="Qidiruv">
               <Search className="h-5 w-5" aria-hidden />

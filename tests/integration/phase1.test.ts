@@ -164,6 +164,17 @@ describe("o‘zlashma so‘zlar va izohlar", () => {
     expect(authorView.body.discussion.comments).toHaveLength(2);
   });
 
+  it("rate limit: bir foydalanuvchi 10 daqiqada 5 tadan ortiq izoh qoldira olmaydi", async () => {
+    const c = new Client();
+    await c.signUp();
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const r = await c.json("/api/discussions", { method: "POST", json: { kind: "LOANWORD", term: `${term}rl`, proposal: `taklif ${i}`, explanation: `Tushuntirish matni raqami ${i}.` } });
+      statuses.push(r.status);
+    }
+    expect(statuses).toEqual([201, 201, 201, 201, 201, 429]);
+  });
+
   it("admin taklifni tasdiqlangan yozuvga aylantiradi va audit yoziladi", async () => {
     const admin = new Client();
     const { id } = await admin.signUp("Admin2");

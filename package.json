@@ -15,7 +15,9 @@
     "db:seed:demo": "tsx scripts/seed-demo.ts",
     "admin:grant": "tsx scripts/grant-admin.ts",
     "worker": "tsx scripts/worker.ts",
-    "cleanup": "tsx scripts/cleanup.ts"
+    "cleanup": "tsx scripts/cleanup.ts",
+    "postinstall": "prisma generate",
+    "templates": "tsx scripts/make-templates.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -50,5 +52,8 @@
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "^4.1.12"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

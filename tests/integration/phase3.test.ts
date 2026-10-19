@@ -88,7 +88,8 @@ describe("tashqi xizmatlar ulanmaganda natija to‘qilmaydi", () => {
     expect((await u.json("/api/ai/spelling", { method: "POST", json: { text: "x", consent: false } })).status).toBe(400);
     const st = await new Client().json("/api/status");
     expect(st.body.ai.connected).toBe(false);
-    expect(st.body.ocr.connected).toBe(false);
+    // OCR holati sozlamaga mos: OCR_PROVIDER berilmagan bo‘lsa — ulanmagan
+    if (!process.env.OCR_PROVIDER) expect(st.body.ocr.connected).toBe(false);
   });
 });
 

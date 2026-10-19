@@ -12,6 +12,7 @@ export default defineConfig({
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     environment: "node",
     setupFiles: ["dotenv/config"],
+    globalSetup: ["tests/global-setup.ts"],
     testTimeout: 30000,
     fileParallelism: false,
   },
