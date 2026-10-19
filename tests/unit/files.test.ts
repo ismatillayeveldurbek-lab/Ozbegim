@@ -181,7 +181,7 @@ describe("PDF", () => {
     expect(r.originalText).toContain("Shahar markazida");
     expect(r.text).toContain("Шаҳар марказида");
   });
-  it("matnsiz (skanerlangan) PDF OCR xizmati ulanmaganini aytadi", async () => {
+  it.skipIf(!!process.env.OCR_PROVIDER)("matnsiz (skanerlangan) PDF OCR xizmati ulanmaganini aytadi", async () => {
     const doc = await PDFDocument.create();
     doc.addPage([200, 200]);
     const buf = Buffer.from(await doc.save());

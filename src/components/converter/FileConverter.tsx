@@ -31,7 +31,7 @@ interface Upload {
   xhr?: XMLHttpRequest;
 }
 interface Status {
-  ocr: { connected: boolean; message: string };
+  ocr: { connected: boolean; message: string; pdf: boolean };
   transcription: { connected: boolean; message: string };
   retentionHours: number;
   maxFileMb: number;
@@ -386,7 +386,7 @@ export function FileConverter() {
         <h3 id="formats-title" className="mb-2 text-lg font-bold">
           Qo‘llab-quvvatlanadigan formatlar
         </h3>
-        <FormatTable ocrConnected={!!status?.ocr.connected} />
+        <FormatTable ocrConnected={!!status?.ocr.connected} ocrPdf={!!status?.ocr.pdf} />
       </section>
     </div>
   );

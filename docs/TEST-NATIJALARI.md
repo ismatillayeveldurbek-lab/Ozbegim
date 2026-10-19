@@ -13,10 +13,9 @@ $ npm run build
 muvaffaqiyatli (3 ta Turbopack ogohlantirishi: fayl tizimiga dinamik murojaat — storage/ocr modullari)
 $ npm test
  Test Files  9 passed (9)
-      Tests  89 passed (89)
+      Tests  89 passed | 1 skipped (90)
 $ npm run test:e2e
-
-  14 passed (24.7s)
+14 passed (27.1s)
 ```
 
 ## Vitest (birlik + integratsion) — har bir test
@@ -43,13 +42,8 @@ $ npm run test:e2e
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > boshqa foydalanuvchi shaxsiy yozuvni ocha, o‘zgartira, o‘chira, eksport qila olmaydi
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > boshqa foydalanuvchining papkasiga yozuv qo‘shib bo‘lmaydi
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > tarix faqat rozilik bilan; meta rejimida matn saqlanmaydi; o‘chirish
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > so‘z: bo‘g‘in, harflar, lug‘atdagi o‘zak (namuna lug‘at)
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > kirill kiritish ham tahlil qilinadi
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > gap tahlili
- ✓ tests/integration/phase3.test.ts > mashqlar > namuna (DEMO) va tekshirilmagan yozuvlar savollar soniga kirmaydi
- ✓ tests/integration/phase3.test.ts > mashqlar > savol → javob → tushuntirish; urinish tarixga yoziladi; tokenni soxtalashtirib bo‘lmaydi
- ✓ tests/integration/phase3.test.ts > mashqlar > kartochkalar: baho bo‘yicha keyingi takrorlash vaqti
- ✓ tests/integration/phase3.test.ts > tashqi xizmatlar ulanmaganda natija to‘qilmaydi > AI endpointlari 503 qaytaradi; holat sahifasi “ulanmagan” deydi
+ ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > rasmdan matn ajratiladi va tekshirish uchun qaytariladi
+ ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > skanerlangan PDF (faqat rasm) sahifalari OCR qilinadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > XLSX yuklanadi, ishlanadi va natijada formulalar/sonlar saqlanadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > boshqa foydalanuvchi faylni ko‘ra, yuklab ola, o‘chira olmaydi
  ✓ tests/integration/files.test.ts > fayl vazifalari > qo‘llanmaydigan, mos kelmaydigan va katta fayllar rad etiladi
@@ -57,6 +51,13 @@ $ npm run test:e2e
  ✓ tests/integration/files.test.ts > fayl vazifalari > foydalanuvchi faylni o‘chiradi — saqlashdagi obyektlar ham o‘chadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > muddati tugagan fayllar tozalanadi, muddati tugamaganlar qoladi
  ✓ tests/integration/files.test.ts > fayl vazifalari > bekor qilish va qayta urinish
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > so‘z: bo‘g‘in, harflar, lug‘atdagi o‘zak (namuna lug‘at)
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > kirill kiritish ham tahlil qilinadi
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > gap tahlili
+ ✓ tests/integration/phase3.test.ts > mashqlar > namuna (DEMO) va tekshirilmagan yozuvlar savollar soniga kirmaydi
+ ✓ tests/integration/phase3.test.ts > mashqlar > savol → javob → tushuntirish; urinish tarixga yoziladi; tokenni soxtalashtirib bo‘lmaydi
+ ✓ tests/integration/phase3.test.ts > mashqlar > kartochkalar: baho bo‘yicha keyingi takrorlash vaqti
+ ✓ tests/integration/phase3.test.ts > tashqi xizmatlar ulanmaganda natija to‘qilmaydi > AI endpointlari 503 qaytaradi; holat sahifasi “ulanmagan” deydi
  ✓ tests/unit/files.test.ts > DOCX > run’lar orasida bo‘lingan Sh/O‘ birikmalari va bezaklar saqlanadi
  ✓ tests/unit/files.test.ts > DOCX > matn qutisi (ichma-ich paragraf) to‘g‘ri ishlanadi
  ✓ tests/unit/files.test.ts > PPTX > slayd matni o‘giriladi, tuzilma saqlanadi
@@ -66,11 +67,10 @@ $ npm run test:e2e
  ✓ tests/unit/files.test.ts > Subtitrlar > SRT vaqt belgilari va raqamlar o‘zgarmaydi, teglar saqlanadi
  ✓ tests/unit/files.test.ts > Subtitrlar > VTT sarlavha, NOTE, STYLE, cue identifikatori va sozlamalar saqlanadi
  ✓ tests/unit/files.test.ts > PDF > matnli PDF’dan matn ajratiladi va tekshirish uchun qaytariladi
- ✓ tests/unit/files.test.ts > PDF > matnsiz (skanerlangan) PDF OCR xizmati ulanmaganini aytadi
+ ↓ tests/unit/files.test.ts > PDF > matnsiz (skanerlangan) PDF OCR xizmati ulanmaganini aytadi
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > bo‘sh, mos kelmaydigan, eski, makrosli, media va noma’lum formatlar
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > buzilgan arxiv, ZIP bomb va zararli yo‘llar
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > Windows-1251 kodlashdagi kirill TXT o‘qiladi
- ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > rasmdan matn ajratiladi va tekshirish uchun qaytariladi
  ✓ tests/unit/analysis.test.ts > bo‘g‘in va harf-tovush > bo‘g‘inlarga ajratish
  ✓ tests/unit/analysis.test.ts > bo‘g‘in va harf-tovush > harflar soni: o‘, sh, ng — bitta harf; tutuq — belgi
  ✓ tests/unit/analysis.test.ts > morfologik tahlil > ot: ko‘plik, egalik, kelishik
@@ -83,6 +83,17 @@ $ npm run test:e2e
  ✓ tests/unit/analysis.test.ts > gap tahlili > noaniq holat muqobil talqin bilan beriladi
  ✓ tests/unit/analysis.test.ts > gap tahlili > yashirin ega haqida ogohlantirish
  ✓ tests/unit/analysis.test.ts > matn statistikasi > belgi, so‘z, gap, paragraf va yozuv tarkibi
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > o‘/g‘ va tutuq xatolari, katta harf
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > apostrof uslubi va noto‘g‘ri belgilar
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > atoqli otlar, ism-familiyaga tegmaslik
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > qo‘shib, ajratib va chiziqcha bilan yozish
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > bo‘shliqlar
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > tinish belgilari faqat yoqilganda
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > shaxsiy lug‘at va himoyalangan parchalar e’tiborsiz qoldiriladi
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > kirill matn: bazadagi juftlik va aralash yozuv
+ ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > kontekstga bog‘liq so‘zlar xato deb belgilanmaydi
+ ✓ tests/unit/spelling.test.ts > tavsiyalarni xavfsiz qo‘llash > bittasini qabul qilgandan keyin qolganlari to‘g‘ri joyga tushadi (qayta hisoblash)
+ ✓ tests/unit/spelling.test.ts > tavsiyalarni xavfsiz qo‘llash > barchasini qabul qilish va ortga qaytarish
  ✓ tests/unit/translit.test.ts > lotin → kirill > asosiy qabul mezonlari
  ✓ tests/unit/translit.test.ts > lotin → kirill > apostrof variantlari bir xil natija beradi
  ✓ tests/unit/translit.test.ts > lotin → kirill > katta-kichik harflar
@@ -100,17 +111,6 @@ $ npm run test:e2e
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > lotin/kirill va apostrof variantlari bitta kalit
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > turli so‘zlar birlashmaydi
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > tinish belgilari va tirelar
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > o‘/g‘ va tutuq xatolari, katta harf
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > apostrof uslubi va noto‘g‘ri belgilar
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > atoqli otlar, ism-familiyaga tegmaslik
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > qo‘shib, ajratib va chiziqcha bilan yozish
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > bo‘shliqlar
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > tinish belgilari faqat yoqilganda
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > shaxsiy lug‘at va himoyalangan parchalar e’tiborsiz qoldiriladi
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > kirill matn: bazadagi juftlik va aralash yozuv
- ✓ tests/unit/spelling.test.ts > imlo tekshiruvi > kontekstga bog‘liq so‘zlar xato deb belgilanmaydi
- ✓ tests/unit/spelling.test.ts > tavsiyalarni xavfsiz qo‘llash > bittasini qabul qilgandan keyin qolganlari to‘g‘ri joyga tushadi (qayta hisoblash)
- ✓ tests/unit/spelling.test.ts > tavsiyalarni xavfsiz qo‘llash > barchasini qabul qilish va ortga qaytarish
 ```
 
 ## Playwright (kompyuter 1366×900 va telefon 390×844)
@@ -132,6 +132,6 @@ $ npm run test:e2e
   ✓  14 [telefon] › tests/e2e/app.spec.ts:111:5 › tahlil va statistika sahifalari
 ```
 
-OCR testi serverda Tesseract (uzb, uzb_cyrl) o‘rnatilgan holda o‘tdi; Tesseract bo‘lmagan muhitda u o‘tkazib yuboriladi.
+OCR testlari (rasm va skanerlangan PDF) serverda Tesseract (uzb, uzb_cyrl) va poppler-utils o‘rnatilgan holda o‘tdi; Tesseract bo‘lmagan muhitda ular o‘tkazib yuboriladi. “OCR ulanmagan” testi esa OCR yoqilgan muhitda o‘tkazib yuboriladi (↓).
 
 Docker obrazi bu muhitda yig‘ilmadi (konteyner ichidan npm reestriga ulanish sandbox tarmog‘ida uzildi) — sinalmagan.

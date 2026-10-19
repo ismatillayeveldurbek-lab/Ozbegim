@@ -36,7 +36,12 @@ interface Question {
   demo: boolean;
 }
 
-const secret = () => process.env.BETTER_AUTH_SECRET || "dev-secret";
+const secret = () => {
+  const v = process.env.BETTER_AUTH_SECRET;
+  if (v && v.length >= 32) return v;
+  if (process.env.NODE_ENV === "production") throw new Error("BETTER_AUTH_SECRET sozlanmagan yoki 32 belgidan qisqa");
+  return v || "dev-secret";
+};
 
 function sign(p: Payload) {
   const body = Buffer.from(JSON.stringify(p)).toString("base64url");

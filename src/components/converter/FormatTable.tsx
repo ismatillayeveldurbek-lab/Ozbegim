@@ -7,10 +7,13 @@ const LEVEL: Record<SupportLevel, { text: string; cls: string; mark: string }> =
   unsupported: { text: "Qo‘llanmaydi", cls: "bg-danger-soft text-danger", mark: "×" },
 };
 
-export function FormatTable({ ocrConnected }: { ocrConnected: boolean }) {
-  const rows = FORMAT_TABLE.map((r) =>
-    ocrConnected && r.level === "not_connected" && r.format === "JPG / PNG" ? { ...r, level: "limited" as const, note: "OCR (Tesseract) orqali; natijani tekshiring." } : r,
-  );
+export function FormatTable({ ocrConnected, ocrPdf = false }: { ocrConnected: boolean; ocrPdf?: boolean }) {
+  const rows = FORMAT_TABLE.map((r) => {
+    if (ocrConnected && r.format === "JPG / PNG") return { ...r, level: "limited" as const, note: "OCR (Tesseract) orqali; natijani tekshiring." };
+    if (ocrConnected && ocrPdf && r.format === "PDF (skanerlangan)")
+      return { ...r, level: "limited" as const, note: "OCR (Tesseract) orqali, dastlabki 30 sahifagacha; joylashuv saqlanmaydi, natijani tekshiring." };
+    return r;
+  });
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-[0.95rem]">

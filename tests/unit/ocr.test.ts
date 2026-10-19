@@ -16,4 +16,18 @@ describe.skipIf(!hasTesseract)("OCR (Tesseract)", () => {
     expect(r.text).toMatch(/Шаҳар марказида/);
     expect(r.warnings[0]).toContain("OCR");
   });
+
+  it("skanerlangan PDF (faqat rasm) sahifalari OCR qilinadi", async () => {
+    process.env.OCR_PROVIDER = "tesseract";
+    const { PDFDocument } = await import("pdf-lib");
+    const doc = await PDFDocument.create();
+    const png = await doc.embedPng(readFileSync("tests/fixtures/ocr-sample.png"));
+    for (let i = 0; i < 2; i++) doc.addPage([900, 200]).drawImage(png, { x: 0, y: 0, width: 900, height: 200 });
+    const { convertFile } = await import("@/lib/files/convert");
+    const r = await convertFile("pdf", "skan.pdf", Buffer.from(await doc.save()), { direction: "lat2cyr" });
+    expect(r.kind).toBe("review");
+    if (r.kind !== "review") return;
+    expect(r.originalText.match(/Shahar markazida/g)).toHaveLength(2);
+    expect(r.text).toContain("Шаҳар марказида");
+  });
 });

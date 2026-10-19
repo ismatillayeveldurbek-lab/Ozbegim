@@ -16,7 +16,7 @@ export const FORMAT_TABLE: FormatInfo[] = [
   { format: "PPTX", label: "PowerPoint taqdimoti", level: "works", note: "Slayd va izoh matnlari; diagrammalar o‘girilmaydi." },
   { format: "SRT / VTT", label: "Subtitrlar", level: "works", note: "Vaqt belgilari, cue identifikatorlari va teglar saqlanadi." },
   { format: "PDF (matnli)", label: "PDF", level: "limited", note: "Matn ajratiladi, siz tekshirib tahrirlaysiz; asl joylashuv saqlanmaydi — natija TXT yoki DOCX." },
-  { format: "PDF (skanerlangan)", label: "PDF", level: "not_connected", note: "OCR xizmati kerak." },
+  { format: "PDF (skanerlangan)", label: "PDF", level: "not_connected", note: "OCR xizmati (Tesseract + poppler-utils) kerak." },
   { format: "JPG / PNG", label: "Rasm", level: "not_connected", note: "Rasmdan matn ajratish uchun OCR xizmati kerak." },
   { format: "Rasmdagi yozuvni almashtirish", label: "Rasm", level: "unsupported", note: "Amalga oshirilmagan." },
   { format: "DOC / XLS / PPT", label: "Eski Office", level: "unsupported", note: "Avval .docx / .xlsx / .pptx sifatida qayta saqlang." },

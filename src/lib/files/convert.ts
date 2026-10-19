@@ -10,7 +10,7 @@ import { decodeText, FileRejectError, type FileFormat } from "./detect";
 import { convertOffice, officeSampleText } from "./formats/office";
 import { extractPdfText } from "./formats/pdf";
 import { convertCsv, convertSrt, convertVtt } from "./formats/text-formats";
-import { runOcr } from "./ocr";
+import { ocrStatus, runOcr, runPdfOcr } from "./ocr";
 
 export interface ConvertOptions {
   direction: "auto" | Direction;
@@ -77,11 +77,29 @@ export async function convertFile(format: FileFormat, name: string, buf: Buffer,
         if (e.code === "PDF_PAGES") throw new FileRejectError("PDF_PAGES", e.message);
         throw new FileRejectError("CORRUPT", "PDF faylni o‘qib bo‘lmadi (buzilgan yoki parol bilan himoyalangan).");
       });
-      if (r.scanned)
-        throw new FileRejectError(
-          "OCR_NOT_CONNECTED",
-          "PDF ichida matn qatlami yo‘q (skanerlangan hujjat). Skanerlangan PDF uchun OCR kerak — bu format uchun OCR xizmati ulanmagan.",
-        );
+      if (r.scanned) {
+        const st = ocrStatus();
+        if (!st.connected || !st.pdf)
+          throw new FileRejectError(
+            "OCR_NOT_CONNECTED",
+            "PDF ichida matn qatlami yo‘q (skanerlangan hujjat). Skanerlangan PDF uchun OCR kerak — bu format uchun OCR xizmati ulanmagan.",
+          );
+        const o = await runPdfOcr(buf, r.pages).catch(() => {
+          throw new FileRejectError("OCR_FAILED", "Skanerlangan PDF’ni OCR orqali o‘qib bo‘lmadi.");
+        });
+        if (!/\p{L}/u.test(o.text)) throw new FileRejectError("OCR_FAILED", "OCR sahifalarda matn topmadi.");
+        const direction = resolveDirection(opts.direction, o.text);
+        const warnings = ["Skanerlangan PDF matni OCR orqali ajratildi; xatolar bo‘lishi mumkin. Asl joylashuv saqlanmaydi."];
+        if (r.pages > o.pagesRead) warnings.push(`Faqat dastlabki ${o.pagesRead} sahifa o‘qildi (jami ${r.pages}).`);
+        return {
+          kind: "review",
+          originalText: o.text,
+          text: transliterate(o.text, { direction, apostrophe: opts.apostrophe, protect: opts.protect }).text,
+          warnings,
+          direction,
+          note: "OCR natijasini albatta tekshiring va tahrirlang, so‘ng TXT yoki DOCX ko‘rinishida yuklab oling.",
+        };
+      }
       const direction = resolveDirection(opts.direction, r.text);
       return {
         kind: "review",

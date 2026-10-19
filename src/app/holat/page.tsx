@@ -51,7 +51,7 @@ export default function Page() {
         ))}
         <Panel>
           <h3 className="mb-2 text-lg font-bold">Fayl formatlari</h3>
-          <FormatTable ocrConnected={s.ocr.connected} />
+          <FormatTable ocrConnected={s.ocr.connected} ocrPdf={s.ocr.pdf} />
           <p className="mt-2 text-sm text-ink-muted">Fayllar {s.retentionHours} soat saqlanadi, bitta fayl hajmi {s.maxFileMb} MB gacha.</p>
         </Panel>
       </div>

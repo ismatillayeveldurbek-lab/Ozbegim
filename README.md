@@ -110,6 +110,10 @@ pg_dump --format=custom "$DATABASE_URL" > ozbegim-$(date +%F).dump
 pg_restore --clean --dbname "$DATABASE_URL" ozbegim-YYYY-MM-DD.dump
 ```
 
+## Claude Code bulut sessiyalari
+
+`.claude/hooks/session-start.sh` bulut sessiyasi boshlanganda `npm install`, PostgreSQL’ni ishga tushirish, ishlab chiqish bazasi va `.env` (faqat mahalliy qiymatlar) hamda migratsiyalarni bajaradi. Hook sinxron ishlaydi.
+
 ## Testlar
 
 ```bash
@@ -139,7 +143,7 @@ Test natijalari (haqiqiy yugurish) — [docs/TEST-NATIJALARI.md](docs/TEST-NATIJ
 3. `.env` ni to‘ldiring (`BETTER_AUTH_URL=https://sizning-domen.uz`, `TRUST_PROXY=true`, kuchli `BETTER_AUTH_SECRET`).
 4. Ikkita jarayonni systemd/pm2 bilan doimiy ishlating: `npm start` va `npm run worker`.
 5. Oldiga Nginx/Caddy qo‘yib HTTPS ulang. Yuklash hajmi uchun proxy’da `client_max_body_size 25m;`.
-6. OCR uchun (ixtiyoriy, bepul): `apt install tesseract-ocr tesseract-ocr-uzb tesseract-ocr-uzb-cyrl` va `OCR_PROVIDER=tesseract`.
+6. OCR uchun (ixtiyoriy, bepul): `apt install tesseract-ocr tesseract-ocr-uzb tesseract-ocr-uzb-cyrl poppler-utils` va `OCR_PROVIDER=tesseract` (poppler-utils — skanerlangan PDF uchun).
 
 **Variant B — Docker Compose:** `Dockerfile` va `docker-compose.yml` (db, migrate, web, worker, umumiy fayl hajmi) tayyorlangan:
 
@@ -165,7 +169,7 @@ Saytdagi “Imkoniyatlar holati” sahifasi (`/holat`) joriy holatni jonli ko‘
 - Iboralar va o‘zlashma so‘zlar qidiruvi (lotin/kirill/apostrof variantlari, yaqin natijalar), izohlar, ovozlar, shikoyatlar, moderatsiya, taklifni lug‘at yozuviga aylantirish.
 - Shaxsiy lug‘at (papka, teg, qayd, qidiruv, CSV/JSON eksport), mashqlar va SM-2 kartochkalar, matn statistikasi, rozilikka asoslangan ish tarixi.
 - Admin: lug‘at CRUD, import/eksport, zaxira, foydalanuvchilar, audit jurnali, topilmagan/ko‘p qidirilgan so‘zlar.
-- OCR (JPG/PNG) — serverda Tesseract o‘rnatilgan va `OCR_PROVIDER=tesseract` bo‘lsa.
+- OCR (JPG/PNG va skanerlangan PDF, dastlabki 30 sahifa) — serverda Tesseract (+ poppler-utils) o‘rnatilgan va `OCR_PROVIDER=tesseract` bo‘lsa. Fayl server ichida qayta ishlanadi, tashqariga yuborilmaydi.
 
 **Cheklangan**
 - Matnli PDF — matn ajratiladi va tahrirlanadi, lekin asl joylashuv saqlanmaydi (natija TXT/DOCX).
@@ -175,7 +179,6 @@ Saytdagi “Imkoniyatlar holati” sahifasi (`/holat`) joriy holatni jonli ko‘
 
 **Hali ulanmagan**
 - AI tavsiyalari (imlo, gap tahlili) — kod tayyor, `ANTHROPIC_API_KEY` kerak.
-- Skanerlangan PDF uchun OCR (Tesseract PDF’ni bevosita o‘qimaydi; sahifalarni rasmga aylantirish kerak).
 - Audio/video transkripsiyasi — xizmat tanlanmagan; interfeys buni ochiq aytadi.
 - Rasmdagi yozuvni almashtirish — amalga oshirilmagan.
 - Eski DOC/XLS/PPT — bevosita qo‘llanmaydi, qayta saqlash yo‘riqnomasi ko‘rsatiladi.

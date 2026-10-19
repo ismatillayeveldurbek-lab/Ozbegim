@@ -2,7 +2,7 @@
 FROM node:22-bookworm-slim AS base
 WORKDIR /app
 # OCR uchun bepul, lokal Tesseract (o‘zbek lotin va kirill til paketlari bilan)
-RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-uzb tesseract-ocr-uzb-cyrl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-uzb tesseract-ocr-uzb-cyrl poppler-utils ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
