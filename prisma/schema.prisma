@@ -1,0 +1,580 @@
+// O‘ZBEGIM — ma’lumotlar bazasi sxemasi (PostgreSQL, Prisma 7)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Foydalanuvchilar va autentifikatsiya (Better Auth) ─────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  /// "user" | "moderator" | "admin". Faqat server skripti yoki admin o‘zgartiradi.
+  role          String    @default("user")
+  banned        Boolean   @default(false)
+  /// Ish tarixi: "off" | "meta" (faqat metama’lumot) | "full" (matn bilan)
+  historyMode   String    @default("off")
+
+  sessions        Session[]
+  accounts        Account[]
+  comments        Comment[]
+  votes           CommentVote[]
+  reports         Report[]           @relation("reporter")
+  folders         Folder[]
+  tags            Tag[]
+  savedItems      SavedItem[]
+  attempts        ExerciseAttempt[]
+  fileJobs        FileJob[]
+  history         HistoryEntry[]
+  auditLogs       AuditLog[]
+  importJobs      ImportJob[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// Better Auth rate limit jadvali
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+/// Ilova API’lari uchun rate limit (fiks oyna)
+model AppRateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+}
+
+// ───────────── Lug‘at ma’lumotlari ─────────────
+
+/// VERIFIED — tasdiqlangan; PENDING — tekshirilmoqda; REJECTED — rad etilgan
+enum EntryStatus {
+  VERIFIED
+  PENDING
+  REJECTED
+}
+
+/// OFFICIAL — asosiy baza (admin importi); COMMUNITY — hamjamiyat taklifidan; DEMO — namuna (haqiqiy ma’lumot emas)
+enum EntryOrigin {
+  OFFICIAL
+  COMMUNITY
+  DEMO
+}
+
+model Source {
+  id        String     @id @default(cuid())
+  title     String     @unique
+  author    String?
+  url       String?
+  year      Int?
+  note      String?
+  createdAt DateTime   @default(now())
+  idioms    Idiom[]
+  loanwords Loanword[]
+  lexemes   Lexeme[]
+}
+
+model Idiom {
+  id        String       @id @default(cuid())
+  phrase    String
+  /// Normallashtirilgan qidiruv kaliti (lotin, kichik harf, yagona apostrof)
+  key       String       @unique
+  status    EntryStatus  @default(PENDING)
+  origin    EntryOrigin  @default(OFFICIAL)
+  tags      String[]
+  sourceId  String?
+  source    Source?      @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  senses    IdiomSense[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([status, origin])
+}
+
+model IdiomSense {
+  id       String   @id @default(cuid())
+  idiomId  String
+  idiom    Idiom    @relation(fields: [idiomId], references: [id], onDelete: Cascade)
+  order    Int      @default(0)
+  meaning  String
+  example  String?
+  /// Ma’nodosh iboralar
+  synonyms String[]
+
+  @@index([idiomId])
+}
+
+model Loanword {
+  id               String                @id @default(cuid())
+  word             String
+  key              String                @unique
+  /// O‘zbekcha ma’nosi (izoh) — muqobildan alohida
+  meaning          String?
+  /// Qo‘llanish sohasi
+  domain           String?
+  originLanguage   String?
+  /// Muqobil yozilishlar (masalan: kompyuter / kompyutor)
+  spellingVariants String[]
+  status           EntryStatus           @default(PENDING)
+  origin           EntryOrigin           @default(OFFICIAL)
+  tags             String[]
+  sourceId         String?
+  source           Source?               @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  alternatives     LoanwordAlternative[]
+  examples         LoanwordExample[]
+  variantKeys      LoanwordKey[]
+  discussion       Discussion?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([status, origin])
+}
+
+/// Muqobil yozilishlar uchun qo‘shimcha qidiruv kalitlari
+model LoanwordKey {
+  key        String   @id
+  loanwordId String
+  loanword   Loanword @relation(fields: [loanwordId], references: [id], onDelete: Cascade)
+
+  @@index([loanwordId])
+}
+
+model LoanwordAlternative {
+  id         String   @id @default(cuid())
+  loanwordId String
+  loanword   Loanword @relation(fields: [loanwordId], references: [id], onDelete: Cascade)
+  text       String
+  /// Muqobilning qo‘llanish vaziyati
+  usageNote  String?
+  order      Int      @default(0)
+
+  @@index([loanwordId])
+}
+
+model LoanwordExample {
+  id         String   @id @default(cuid())
+  loanwordId String
+  loanword   Loanword @relation(fields: [loanwordId], references: [id], onDelete: Cascade)
+  text       String
+  order      Int      @default(0)
+
+  @@index([loanwordId])
+}
+
+/// So‘z tahlili uchun lug‘at: so‘z o‘zagi, turkumi va ma’nosi
+model Lexeme {
+  id        String      @id @default(cuid())
+  lemma     String
+  key       String
+  /// ot | sifat | son | olmosh | fe’l | ravish | ko‘makchi | bog‘lovchi | yuklama | undov | modal | taqlid
+  pos       String
+  meaning   String?
+  examples  String[]
+  status    EntryStatus @default(PENDING)
+  origin    EntryOrigin @default(OFFICIAL)
+  sourceId  String?
+  source    Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([key, pos])
+  @@index([key])
+}
+
+/// Imlo tekshiruvi uchun tasdiqlangan "xato → to‘g‘ri" juftliklari
+model SpellingPair {
+  id        String      @id @default(cuid())
+  wrong     String
+  wrongKey  String      @unique
+  correct   String
+  note      String?
+  status    EntryStatus @default(PENDING)
+  origin    EntryOrigin @default(OFFICIAL)
+  createdAt DateTime    @default(now())
+}
+
+// ───────────── Muhokamalar, izohlar, moderatsiya ─────────────
+
+enum DiscussionKind {
+  LOANWORD
+  IDIOM
+}
+
+model Discussion {
+  id          String         @id @default(cuid())
+  kind        DiscussionKind
+  /// Lotin/kirill va apostrof variantlari uchun yagona kalit
+  key         String
+  displayTerm String
+  loanwordId  String?        @unique
+  loanword    Loanword?      @relation(fields: [loanwordId], references: [id], onDelete: SetNull)
+  comments    Comment[]
+  createdAt   DateTime       @default(now())
+
+  @@unique([kind, key])
+}
+
+enum CommentStatus {
+  VISIBLE
+  HIDDEN
+  REJECTED
+  ACCEPTED
+}
+
+model Comment {
+  id             String        @id @default(cuid())
+  discussionId   String
+  discussion     Discussion    @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Taklif etilayotgan muqobil yoki ma’no
+  proposal       String
+  explanation    String
+  example        String?
+  sourceUrl      String?
+  contentHash    String
+  status         CommentStatus @default(VISIBLE)
+  score          Int           @default(0)
+  moderationNote String?
+  moderatedById  String?
+  moderatedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  votes          CommentVote[]
+  reports        Report[]
+
+  @@unique([discussionId, userId, contentHash])
+  @@index([discussionId, status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model CommentVote {
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     Int
+  createdAt DateTime @default(now())
+
+  @@id([commentId, userId])
+}
+
+enum ReportReason {
+  SPAM
+  OFFENSIVE
+  WRONG
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  commentId    String
+  comment      Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporterId   String
+  reporter     User         @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason       ReportReason
+  details      String?
+  status       ReportStatus @default(OPEN)
+  /// Moderatsiya qarori: comment_hidden | comment_rejected | dismissed | ...
+  decision     String?
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@unique([commentId, reporterId])
+  @@index([status, createdAt])
+}
+
+// ───────────── Shaxsiy lug‘at va mashqlar ─────────────
+
+model Folder {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime    @default(now())
+  items     SavedItem[]
+
+  @@unique([userId, name])
+}
+
+model Tag {
+  id     String         @id @default(cuid())
+  userId String
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+  items  SavedItemTag[]
+
+  @@unique([userId, name])
+}
+
+enum SavedKind {
+  WORD
+  IDIOM
+  LOANWORD
+}
+
+model SavedItem {
+  id                  String         @id @default(cuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind                SavedKind
+  term                String
+  key                 String
+  meaning             String?
+  note                String?
+  /// Imlo tekshiruvida xato deb hisoblanmasin
+  ignoreInSpellcheck  Boolean        @default(false)
+  refId               String?
+  folderId            String?
+  folder              Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags                SavedItemTag[]
+  review              ReviewState?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@unique([userId, kind, key])
+  @@index([userId, createdAt])
+}
+
+model SavedItemTag {
+  savedItemId String
+  savedItem   SavedItem @relation(fields: [savedItemId], references: [id], onDelete: Cascade)
+  tagId       String
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([savedItemId, tagId])
+}
+
+/// Kartochkalar uchun takrorlash holati (SM-2 ga asoslangan)
+model ReviewState {
+  savedItemId    String    @id
+  savedItem      SavedItem @relation(fields: [savedItemId], references: [id], onDelete: Cascade)
+  ease           Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  lapses         Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+
+  @@index([dueAt])
+}
+
+model ExerciseAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// idiom_meaning | loanword_alternative | spelling | translit | flashcard
+  type          String
+  itemRef       String?
+  prompt        String
+  userAnswer    String
+  correctAnswer String
+  isCorrect     Boolean
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, type, isCorrect])
+}
+
+// ───────────── Fayllar va fon vazifalari ─────────────
+
+enum FileJobStatus {
+  QUEUED
+  PROCESSING
+  NEEDS_REVIEW
+  DONE
+  FAILED
+  CANCELLED
+}
+
+model FileJob {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName    String
+  format          String
+  sizeBytes       Int
+  /// lat2cyr | cyr2lat | auto
+  direction       String
+  options         Json            @default("{}")
+  status          FileJobStatus   @default(QUEUED)
+  errorCode       String?
+  errorMessage    String?
+  warnings        Json            @default("[]")
+  inputKey        String
+  outputKey       String?
+  outputName      String?
+  outputMime      String?
+  /// PDF/rasm: ajratilgan matn (foydalanuvchi tekshirishi uchun) saqlangan obyekt kaliti
+  textKey         String?
+  attempts        Int             @default(0)
+  cancelRequested Boolean         @default(false)
+  lockedAt        DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime        @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  objects         StoredObject[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+/// Yopiq saqlash xizmatidagi har bir obyekt yozuvi (tozalash va egalik uchun)
+model StoredObject {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  ownerId   String
+  fileJobId String?
+  fileJob   FileJob?  @relation(fields: [fileJobId], references: [id], onDelete: SetNull)
+  kind      String
+  sizeBytes Int
+  expiresAt DateTime
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt, deletedAt])
+}
+
+// ───────────── Admin: import, statistika, audit ─────────────
+
+enum ImportStatus {
+  UPLOADED
+  PREVIEWED
+  COMMITTED
+  FAILED
+  CANCELLED
+}
+
+model ImportJob {
+  id            String       @id @default(cuid())
+  actorId       String
+  actor         User         @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  fileName      String
+  /// idiom | loanword | lexeme | spelling
+  target        String
+  status        ImportStatus @default(UPLOADED)
+  /// [{ name, headers, rows: string[][] }]
+  sheets        Json
+  sheetName     String?
+  mapping       Json?
+  duplicateRule String?
+  preview       Json?
+  report        Json?
+  createdAt     DateTime     @default(now())
+  committedAt   DateTime?
+
+  @@index([actorId, createdAt])
+}
+
+model SearchStat {
+  id             String   @id @default(cuid())
+  /// idiom | loanword | word
+  kind           String
+  key            String
+  display        String
+  hits           Int      @default(0)
+  misses         Int      @default(0)
+  lastSearchedAt DateTime @default(now())
+
+  @@unique([kind, key])
+  @@index([kind, misses])
+  @@index([kind, hits])
+}
+
+model HistoryEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// convert | spellcheck | file | saved
+  type       String
+  summary    String
+  meta       Json     @default("{}")
+  inputText  String?
+  outputText String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  details    Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}

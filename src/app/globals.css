@@ -1,0 +1,279 @@
+@import "tailwindcss";
+@import "@fontsource-variable/onest";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ───────── Dizayn tokenlari ───────── */
+:root {
+  --bg: #eef4f7;
+  --bg-grad-1: #d8ecf6;
+  --bg-grad-2: #d9f2e6;
+  --bg-grad-3: #e8eefb;
+  --ink: #0e2340;
+  --ink-soft: #3a4f6b;
+  --ink-muted: #5b6d85;
+  --accent: #0b7a5a;
+  --accent-strong: #08664b;
+  --accent-soft: #d6f3e7;
+  --accent-ink: #ffffff;
+  --info: #1f5fb8;
+  --info-soft: #dde9fb;
+  --warn: #8a5300;
+  --warn-soft: #fdf0d5;
+  --danger: #b42318;
+  --danger-soft: #fde3e0;
+  --glass: rgb(255 255 255 / 0.66);
+  --glass-strong: rgb(255 255 255 / 0.82);
+  --glass-solid: #f9fbfc;
+  --glass-border: rgb(255 255 255 / 0.75);
+  --line: rgb(14 35 64 / 0.12);
+  --shadow: 0 1px 2px rgb(14 35 64 / 0.05), 0 8px 28px rgb(14 35 64 / 0.08);
+  --blur: 16px;
+  --focus: #1f5fb8;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #07131f;
+  --bg-grad-1: #0b2a3b;
+  --bg-grad-2: #0b3227;
+  --bg-grad-3: #101a33;
+  --ink: #e7eef6;
+  --ink-soft: #c2cfdd;
+  --ink-muted: #94a6bb;
+  --accent: #3ccf97;
+  --accent-strong: #5ee0ad;
+  --accent-soft: rgb(60 207 151 / 0.16);
+  --accent-ink: #04241a;
+  --info: #8bb8ff;
+  --info-soft: rgb(139 184 255 / 0.14);
+  --warn: #ffc56b;
+  --warn-soft: rgb(255 197 107 / 0.14);
+  --danger: #ff9a8f;
+  --danger-soft: rgb(255 154 143 / 0.14);
+  --glass: rgb(16 31 48 / 0.62);
+  --glass-strong: rgb(18 35 54 / 0.85);
+  --glass-solid: #102033;
+  --glass-border: rgb(255 255 255 / 0.09);
+  --line: rgb(231 238 246 / 0.12);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.35);
+  --focus: #8bb8ff;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Onest Variable", "Segoe UI", system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-line: var(--line);
+  --color-glass-solid: var(--glass-solid);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Fondagi mayin ko‘k-yashil gradientlar */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 8% -10%, var(--bg-grad-1), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 10%, var(--bg-grad-2), transparent 60%),
+    radial-gradient(60rem 40rem at 50% 110%, var(--bg-grad-3), transparent 60%),
+    var(--bg);
+}
+
+@layer components {
+/* ───────── Shisha panellar ───────── */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow);
+  border-radius: 1.25rem;
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+}
+.glass-strong {
+  background: var(--glass-strong);
+}
+
+/* backdrop-filter ishlamaydigan brauzerlar uchun o‘qiladigan muqobil fon */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-solid);
+  }
+}
+
+/* Telefonda og‘ir blurni kamaytiramiz */
+@media (max-width: 767px) {
+  :root,
+  .dark {
+    --blur: 8px;
+  }
+  .glass {
+    border-radius: 1rem;
+  }
+}
+
+/* Ko‘rinadigan fokus */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.875rem;
+  border: 1px solid var(--line);
+  background: var(--glass-strong);
+  color: var(--ink);
+  padding: 0.75rem 0.95rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field::placeholder {
+  color: var(--ink-muted);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.05rem;
+  border-radius: 0.875rem;
+  font-weight: 600;
+  font-size: 0.975rem;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--glass-strong);
+}
+.btn-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.btn-sm {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.6;
+  border: 1px solid var(--line);
+}
+
+.prose-uz p + p {
+  margin-top: 0.75rem;
+}
+
+/* Imlo xatolarini matnda ko‘rsatish: rang + to‘lqinli chiziq + belgi (faqat rangga tayanmaymiz) */
+.mark-issue {
+  background: var(--warn-soft);
+  text-decoration: underline wavy var(--warn);
+  text-underline-offset: 3px;
+  border-radius: 0.25rem;
+}
+.mark-issue-active {
+  outline: 2px solid var(--focus);
+}
+
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.35s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
