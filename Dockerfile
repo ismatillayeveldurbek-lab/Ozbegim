@@ -21,4 +21,4 @@ COPY --from=build /app /app
 RUN mkdir -p /app/.data/storage && chown -R node:node /app/.data
 USER node
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["sh", "scripts/start-prod.sh"]

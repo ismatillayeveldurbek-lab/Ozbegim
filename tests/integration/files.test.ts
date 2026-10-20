@@ -14,6 +14,17 @@ async function upload(c: Client, name: string, data: Buffer | string, options: o
   return c.json("/api/files", { method: "POST", body: form });
 }
 
+/** Vazifa yakuniy holatga kelguncha kutadi (worker yoki inline rejimda ham). */
+async function settle(id: string) {
+  await drainQueue();
+  for (let i = 0; i < 100; i++) {
+    const j = await prisma.fileJob.findUnique({ where: { id } });
+    if (!j || !["QUEUED", "PROCESSING"].includes(j.status)) return j;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error("Vazifa yakunlanmadi");
+}
+
 describe("fayl vazifalari", () => {
   let a: Client;
   let b: Client;
@@ -32,8 +43,7 @@ describe("fayl vazifalari", () => {
     ws.getCell("A3").value = { formula: "A2*2", result: 7 };
     const r = await upload(a, "jadval.xlsx", Buffer.from(await wb.xlsx.writeBuffer()));
     expect(r.status).toBe(201);
-    expect(r.body.status).toBe("QUEUED");
-    await drainQueue();
+    await settle(r.body.id);
     const list = await a.json("/api/files");
     const job = list.body.items.find((j: any) => j.id === r.body.id);
     expect(job.status).toBe("DONE");
@@ -51,7 +61,7 @@ describe("fayl vazifalari", () => {
 
   it("boshqa foydalanuvchi faylni ko‘ra, yuklab ola, o‘chira olmaydi", async () => {
     const r = await upload(a, "maxfiy.txt", "Maxfiy matn");
-    await drainQueue();
+    await settle(r.body.id);
     const id = r.body.id;
     expect((await b.json(`/api/files/${id}`)).status).toBe(404);
     expect((await b.req(`/api/files/${id}/download`)).status).toBe(404);
@@ -84,7 +94,7 @@ describe("fayl vazifalari", () => {
     broken.write("\u0000\u0000\u0000", idx + 2, "latin1");
     const r = await upload(a, "buzuq.docx", broken);
     if (r.status === 201) {
-      await drainQueue();
+      await settle(r.body.id);
       const j = (await a.json(`/api/files/${r.body.id}`)).body;
       // CRC xatosi tufayli JSZip ochmaydi — vazifa FAILED, sabab ko‘rsatiladi
       expect(["FAILED", "DONE"]).toContain(j.status);
@@ -94,7 +104,7 @@ describe("fayl vazifalari", () => {
 
   it("foydalanuvchi faylni o‘chiradi — saqlashdagi obyektlar ham o‘chadi", async () => {
     const r = await upload(a, "ochir.txt", "Salom dunyo");
-    await drainQueue();
+    await settle(r.body.id);
     const job = await prisma.fileJob.findUniqueOrThrow({ where: { id: r.body.id } });
     expect(existsSync(objPath(job.inputKey))).toBe(true);
     expect(existsSync(objPath(job.outputKey!))).toBe(true);
@@ -107,7 +117,8 @@ describe("fayl vazifalari", () => {
   it("muddati tugagan fayllar tozalanadi, muddati tugamaganlar qoladi", async () => {
     const old = await upload(a, "eski.txt", "Eski fayl");
     const fresh = await upload(a, "yangi.txt", "Yangi fayl");
-    await drainQueue();
+    await settle(old.body.id);
+    await settle(fresh.body.id);
     await prisma.fileJob.update({ where: { id: old.body.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
     await prisma.storedObject.updateMany({ where: { fileJobId: old.body.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
     const oldJob = await prisma.fileJob.findUniqueOrThrow({ where: { id: old.body.id } });
@@ -119,6 +130,8 @@ describe("fayl vazifalari", () => {
   });
 
   it("bekor qilish va qayta urinish", async () => {
+    // inline rejimda vazifa navbatda turmaydi (darhol ishlanadi) — bu test worker rejimi uchun.
+    if ((await new Client().json("/api/status")).body.fileProcessing === "inline") return;
     const r = await upload(a, "navbat.txt", "Navbatdagi fayl");
     expect((await a.json(`/api/files/${r.body.id}/cancel`, { method: "POST" })).status).toBe(200);
     expect((await prisma.fileJob.findUniqueOrThrow({ where: { id: r.body.id } })).status).toBe("CANCELLED");

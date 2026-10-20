@@ -157,6 +157,8 @@ docker compose exec web npm run admin:grant -- sizning@pochtangiz.uz
 
 > **Diqqat:** Docker obrazi ishlab chiquvchi muhitida to‘liq yig‘ilmadi — konteyner ichidan npm reestriga ulanish sandbox tarmog‘i tomonidan uzildi. Dockerfile standart buyruqlardan iborat, lekin birinchi ishga tushirishda tekshirib ko‘ring.
 
+**Railway:** batafsil yo‘riqnoma — [docs/RAILWAY.md](docs/RAILWAY.md) (bitta servis, `FILE_PROCESSING=inline`, volume, migratsiyalar ishga tushishda).
+
 **Fayl saqlash:** bir nechta server nusxasi bo‘lsa `STORAGE_DRIVER=s3` (AWS S3, Cloudflare R2, MinIO — bucket yopiq bo‘lishi shart). S3 drayveri `@aws-sdk/client-s3` bilan yozilgan, lekin haqiqiy S3 xizmatiga qarshi sinalmagan.
 
 Pulli xizmatlar avtomatik ulanmaydi: AI (Anthropic API) faqat `ANTHROPIC_API_KEY` berilsa ishlaydi va foydalanuvchi har safar matn yuborishga rozilik bildiradi.
