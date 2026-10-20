@@ -8,6 +8,13 @@ const intEnv = (name: string, fallback: number) => {
   return Number.isFinite(v) && v > 0 ? v : fallback;
 };
 
+// Prod’da kalit bo‘lishi, yetarlicha uzun bo‘lishi va ommaviy kodda ko‘rinadigan
+// ishlab chiqish kaliti (dev-only-…) bo‘lmasligi shart.
+if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+  const s = process.env.BETTER_AUTH_SECRET ?? "";
+  if (s.length < 32 || (s.startsWith("dev-only-") && process.env.OZBEGIM_ALLOW_DEV_SECRET !== "1")) throw new Error("BETTER_AUTH_SECRET prod uchun yaroqsiz: kamida 32 belgili tasodifiy kalit bering (openssl rand -base64 32).");
+}
+
 export const auth = betterAuth({
   appName: "O‘zbegim",
   baseURL: process.env.BETTER_AUTH_URL,

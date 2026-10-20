@@ -38,7 +38,7 @@ interface Question {
 
 const secret = () => {
   const v = process.env.BETTER_AUTH_SECRET;
-  if (v && v.length >= 32) return v;
+  if (v && v.length >= 32 && !(process.env.NODE_ENV === "production" && v.startsWith("dev-only-") && process.env.OZBEGIM_ALLOW_DEV_SECRET !== "1")) return v;
   if (process.env.NODE_ENV === "production") throw new Error("BETTER_AUTH_SECRET sozlanmagan yoki 32 belgidan qisqa");
   return v || "dev-secret";
 };

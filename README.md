@@ -122,11 +122,13 @@ npm test                       # Vitest: birlik + integratsion (ishlayotgan serv
 npm run test:e2e               # Playwright: kompyuter va telefon o‘lchamlarida
 ```
 
+> Prod rejimida (`npm start`) server `BETTER_AUTH_SECRET` 32 belgidan qisqa yoki `dev-only-` bilan boshlangan bo‘lsa ishlamaydi. `OZBEGIM_ALLOW_DEV_SECRET=1` — faqat mahalliy sinov uchun, haqiqiy serverda ishlatmang.
+
 Integratsion va E2E testlar `TEST_BASE_URL` (standart `http://localhost:3000`) dagi serverga murojaat qiladi va `.env` dagi bazadan foydalanadi. Testlar uchun server shunday ishga tushiriladi:
 
 ```bash
 npm run build
-AUTH_SIGNUP_PER_HOUR=10000 AUTH_SIGNIN_PER_MINUTE=1000 npm start &
+OZBEGIM_ALLOW_DEV_SECRET=1 AUTH_SIGNUP_PER_HOUR=10000 AUTH_SIGNIN_PER_MINUTE=1000 npm start &
 npm run worker &
 npm test && npm run test:e2e
 # Chromium boshqa joyda bo‘lsa: PW_CHROMIUM_PATH=/yo‘l/chrome npm run test:e2e
