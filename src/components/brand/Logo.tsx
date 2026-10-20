@@ -1,20 +1,13 @@
-/**
- * Vaqtinchalik matnli belgi. Haqiqiy logotip tayyor bo‘lganda faqat shu komponentni
- * almashtiring (masalan, public/brand/logo.svg faylini <img> orqali ko‘rsating).
- */
+import Image from "next/image";
+
+/** Sayt logotipi: emblem (public/brand/emblem.png) va nomi. To‘liq logotip — public/brand/logo.png. */
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2.5" aria-label="O‘zbegim — O‘zbek tili yordamchisi">
-      <span
-        aria-hidden
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg font-extrabold text-white shadow-md"
-        style={{ background: "linear-gradient(135deg, #0e3a6b 0%, #0b7a5a 100%)" }}
-      >
-        Oʻ
-      </span>
+      <Image src="/brand/emblem.png" alt="" aria-hidden width={44} height={44} priority className="h-11 w-11 shrink-0" />
       {!compact && (
         <span className="flex flex-col leading-tight">
-          <span className="text-[1.15rem] font-extrabold tracking-wide text-ink">O‘ZBEGIM</span>
+          <span className="font-serif text-[1.2rem] font-bold tracking-wide text-[#0e2f63] dark:text-[#d9b56a]">O‘ZBEGIM</span>
           <span className="text-[0.75rem] font-medium text-ink-muted">O‘zbek tili yordamchisi</span>
         </span>
       )}
