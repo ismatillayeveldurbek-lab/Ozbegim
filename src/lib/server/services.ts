@@ -1,11 +1,12 @@
 import { ocrStatus } from "@/lib/files/ocr";
+import { aiConnected } from "./ai";
 
 /** Tashqi xizmatlar holati — interfeysda ochiq ko‘rsatiladi. */
 export function servicesStatus() {
   const ocr = ocrStatus();
   return {
     ocr,
-    ai: process.env.ANTHROPIC_API_KEY
+    ai: aiConnected()
       ? { connected: true, provider: "tashqi tahlil", model: null, message: "Qo‘shimcha tavsiyalar ulangan." }
       : { connected: false, provider: null, model: null, message: "Xizmat ulanmagan." },
     transcription: { connected: false, message: "Transkripsiya xizmati ulanmagan." },

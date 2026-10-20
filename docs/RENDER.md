@@ -19,7 +19,8 @@ Migratsiyalar konteyner ishga tushganda bajariladi (`scripts/start-prod.sh`).
    (yoki dashboard → **New → Blueprint** → reponi tanlang).
 2. Render `render.yaml` ni o‘qiydi: `ozbegim` veb-servisi va `ozbegim-db` bazasi yaratiladi.
    `BETTER_AUTH_SECRET` avtomatik generatsiya qilinadi, `DATABASE_URL` bazadan ulanadi.
-3. `ANTHROPIC_API_KEY` so‘ralsa — ixtiyoriy (AI bo‘limlari uchun), bo‘sh qoldirish mumkin.
+3. `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` so‘ralsa — ixtiyoriy (AI bo‘limlari uchun), bo‘sh qoldirish mumkin.
+   Bepul kalit: https://aistudio.google.com → **Get API key** → `GEMINI_API_KEY` ga yozing.
 4. **Apply** → birinchi build ~10 daqiqa davom etadi.
 
 Sayt manzili: `https://ozbegim-xxxx.onrender.com`. `BETTER_AUTH_URL` berilmagan bo‘lsa shu manzil
