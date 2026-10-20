@@ -66,10 +66,14 @@ type GeminiResponse = {
   promptFeedback?: { blockReason?: string };
 };
 
-/** Gemini generateContent (REST). Schema rad etilsa (400) — schema’siz qayta so‘raladi. */
+/**
+ * Gemini generateContent (REST). Tezlik uchun fikrlash darajasi past ("low", GEMINI_THINKING bilan o‘zgaradi).
+ * 400 bo‘lsa — avval thinkingConfig’siz, so‘ng schema’siz qayta so‘raladi; 5xx bo‘lsa — 2 marta qayta urinish.
+ */
 async function geminiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }) {
   const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-  const send = (withSchema: boolean) =>
+  const thinking = process.env.GEMINI_THINKING ?? "low";
+  const send = (withThinking: boolean, withSchema: boolean) =>
     fetch(`${base}/v1beta/models/${encodeURIComponent(GEMINI_MODEL())}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
@@ -81,14 +85,23 @@ async function geminiText(system: string, user: string, schema: Record<string, u
           maxOutputTokens: Math.max(opts.maxTokens ?? 16000, 8192),
           responseMimeType: "application/json",
           ...(withSchema && schema ? { responseJsonSchema: schema } : {}),
+          ...(withThinking && thinking ? { thinkingConfig: { thinkingLevel: thinking } } : {}),
         },
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(90_000),
     });
   let res: Response;
   try {
-    res = await send(true);
-    if (res.status === 400 && schema) res = await send(false);
+    let withThinking = !!thinking;
+    let withSchema = !!schema;
+    for (let attempt = 0; ; attempt++) {
+      res = await send(withThinking, withSchema);
+      if (res.status === 400 && withThinking) withThinking = false;
+      else if (res.status === 400 && withSchema) withSchema = false;
+      else if (res.status >= 500 && attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      else break;
+      await res.body?.cancel();
+    }
   } catch {
     throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
   }
@@ -96,6 +109,8 @@ async function geminiText(system: string, user: string, schema: Record<string, u
   if (res.status === 401 || res.status === 403) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
+    // Diagnostika uchun: faqat holat kodi va xizmat xabari (foydalanuvchi matni emas)
+    console.error(`Gemini xatosi ${res.status}: ${detail.slice(0, 300)}`);
     if (res.status === 400 && /API key/i.test(detail)) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
     throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
   }

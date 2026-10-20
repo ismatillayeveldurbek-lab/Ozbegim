@@ -279,7 +279,7 @@ export async function prepare(target: ImportTarget, sheet: SheetData, mapping: R
 }
 
 /** Barcha yozuvlarni BITTA tranzaksiyada yozadi: xato bo‘lsa, hech narsa saqlanmaydi. */
-export async function commit(target: ImportTarget, prep: PreviewResult, rule: "skip" | "update", actorId: string, jobId: string) {
+export async function commit(target: ImportTarget, prep: PreviewResult, rule: "skip" | "update", actorId: string | null, jobId: string) {
   const existing = new Set(prep.existing.map((e) => e.key));
   return prisma.$transaction(
     async (tx) => {
