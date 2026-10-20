@@ -15,7 +15,7 @@ $ npm test
  Test Files  11 passed (11)
       Tests  102 passed | 1 skipped (103)
 $ npm run test:e2e
-18 passed (22.2s)
+18 passed (21.9s)
 ```
 
 ## Vitest (birlik + integratsion) — har bir test

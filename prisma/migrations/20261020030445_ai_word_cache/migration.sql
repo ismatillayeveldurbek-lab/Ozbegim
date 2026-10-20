@@ -1,15 +1,3 @@
--- DropIndex
-DROP INDEX "Idiom_key_trgm_idx";
-
--- DropIndex
-DROP INDEX "Lexeme_key_trgm_idx";
-
--- DropIndex
-DROP INDEX "Loanword_key_trgm_idx";
-
--- DropIndex
-DROP INDEX "LoanwordKey_key_trgm_idx";
-
 -- CreateTable
 CREATE TABLE "AiWordCache" (
     "key" TEXT NOT NULL,

@@ -150,6 +150,7 @@ model Idiom {
   updatedAt DateTime     @updatedAt
 
   @@index([status, origin])
+  @@index([key(ops: raw("gin_trgm_ops"))], type: Gin, map: "Idiom_key_trgm_idx")
 }
 
 model IdiomSense {
@@ -189,6 +190,7 @@ model Loanword {
   updatedAt        DateTime              @updatedAt
 
   @@index([status, origin])
+  @@index([key(ops: raw("gin_trgm_ops"))], type: Gin, map: "Loanword_key_trgm_idx")
 }
 
 /// Muqobil yozilishlar uchun qo‘shimcha qidiruv kalitlari
@@ -198,6 +200,7 @@ model LoanwordKey {
   loanword   Loanword @relation(fields: [loanwordId], references: [id], onDelete: Cascade)
 
   @@index([loanwordId])
+  @@index([key(ops: raw("gin_trgm_ops"))], type: Gin, map: "LoanwordKey_key_trgm_idx")
 }
 
 model LoanwordAlternative {
@@ -240,6 +243,7 @@ model Lexeme {
 
   @@unique([key, pos])
   @@index([key])
+  @@index([key(ops: raw("gin_trgm_ops"))], type: Gin, map: "Lexeme_key_trgm_idx")
 }
 
 /// Imlo tekshiruvi uchun tasdiqlangan "xato → to‘g‘ri" juftliklari
