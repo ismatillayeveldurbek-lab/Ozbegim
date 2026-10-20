@@ -159,6 +159,8 @@ docker compose exec web npm run admin:grant -- sizning@pochtangiz.uz
 
 **Vercel (bepul):** [docs/VERCEL.md](docs/VERCEL.md) — Neon bazasi, fayllar bazada (`STORAGE_DRIVER=db`), 4 MB chegara, kunlik cron; OCR ishlamaydi.
 
+**Render (bepul):** [docs/RENDER.md](docs/RENDER.md) — `render.yaml` Blueprint, Docker (OCR ishlaydi), fayllar bazada, `FILE_PROCESSING=inline`.
+
 **Railway:** batafsil yo‘riqnoma — [docs/RAILWAY.md](docs/RAILWAY.md) (bitta servis, `FILE_PROCESSING=inline`, volume, migratsiyalar ishga tushishda).
 
 **Fayl saqlash:** bir nechta server nusxasi bo‘lsa `STORAGE_DRIVER=s3` (AWS S3, Cloudflare R2, MinIO — bucket yopiq bo‘lishi shart). S3 drayveri `@aws-sdk/client-s3` bilan yozilgan, lekin haqiqiy S3 xizmatiga qarshi sinalmagan.

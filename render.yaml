@@ -1,0 +1,41 @@
+# Render Blueprint: veb-servis (Dockerfile) + PostgreSQL. Batafsil: docs/RENDER.md
+services:
+  - type: web
+    name: ozbegim
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/status
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ozbegim-db
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      # BETTER_AUTH_URL berilmasa RENDER_EXTERNAL_URL ishlatiladi (scripts/start-prod.sh).
+      # Domen ulangach panelda BETTER_AUTH_URL=https://domen qo‘shing.
+      - key: TRUST_PROXY
+        value: "true"
+      # Bepul rejada disk yo‘q — fayllar bazada, ishlov veb-jarayonning o‘zida
+      - key: STORAGE_DRIVER
+        value: db
+      - key: FILE_PROCESSING
+        value: inline
+      - key: FILE_MAX_MB
+        value: "10"
+      - key: FILE_RETENTION_HOURS
+        value: "24"
+      - key: OCR_PROVIDER
+        value: tesseract
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: ozbegim-db
+    databaseName: ozbegim
+    user: ozbegim
+    plan: free
+    region: frankfurt
