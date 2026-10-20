@@ -32,12 +32,12 @@ So‘ng **Environment** bo‘limida `BETTER_AUTH_URL=https://sizning-domeningiz.
 
 ## 3. Birinchi administrator
 
-Saytda ro‘yxatdan o‘ting, so‘ng servis → **Shell** (pullik rejada) yoki lokal kompyuterdan
-bazaning **External Database URL** i bilan:
+Saytda ro‘yxatdan o‘ting, so‘ng servis → **Environment** → `ADMIN_EMAIL=sizning@pochtangiz.uz`
+qo‘shing va saqlang (**Save, rebuild, and deploy**). Server ishga tushganda shu foydalanuvchiga
+admin roli beriladi (`scripts/start-prod.sh`). Rol bazada saqlanadi, keyin `ADMIN_EMAIL` ni o‘chirsa bo‘ladi.
 
-```bash
-DATABASE_URL="<External Database URL>" npx tsx scripts/grant-admin.ts sizning@pochtangiz.uz
-```
+Muqobil: lokal kompyuterdan bazaning **External Database URL** i bilan
+`DATABASE_URL="<URL>" npx tsx scripts/grant-admin.ts sizning@pochtangiz.uz`.
 
 ## 4. Tekshirish
 

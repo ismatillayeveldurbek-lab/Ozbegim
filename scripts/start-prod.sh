@@ -9,6 +9,10 @@ fi
 if [ "${SKIP_MIGRATIONS:-}" != "1" ]; then
   npx prisma migrate deploy
 fi
+# Shell’siz platformalar (Render bepul reja): ADMIN_EMAIL berilsa, shu foydalanuvchiga admin roli beriladi
+if [ -n "${ADMIN_EMAIL:-}" ]; then
+  npx tsx scripts/grant-admin.ts "$ADMIN_EMAIL" || echo "ADMIN_EMAIL: admin roli berilmadi (foydalanuvchi ro‘yxatdan o‘tganmi?)"
+fi
 if [ -n "${STORAGE_LOCAL_DIR:-}" ]; then
   mkdir -p "$STORAGE_LOCAL_DIR"
 fi
