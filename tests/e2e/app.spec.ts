@@ -118,3 +118,25 @@ test("tahlil va statistika sahifalari", async ({ page }) => {
   await expect(page.getByText("So‘zlar", { exact: true }).locator("..")).toContainText("3");
   await noHorizontalScroll(page);
 });
+
+test("so‘z tahlilchisi: bo‘sh so‘z xabari, Enter bilan yuborish, AI ulanmagan holat", async ({ page }) => {
+  await page.goto("/soz-tahlilchisi");
+  const input = page.getByPlaceholder("So‘z kiriting...");
+  await expect(input).toBeVisible();
+  await page.getByRole("button", { name: "Tahlil qilish" }).click();
+  await expect(page.getByText("Iltimos, so‘z kiriting")).toBeVisible();
+  await input.fill("kitob");
+  await input.press("Enter");
+  await expect(page.getByText("AI xizmati ulanmagan — so‘z tahlilchisi hozircha ishlamaydi.")).toBeVisible();
+  await noHorizontalScroll(page);
+});
+
+test("turistlar tarjimoni: bo‘sh matn xabari va AI ulanmagan holat", async ({ page }) => {
+  await page.goto("/tarjima");
+  await page.getByRole("button", { name: "Tarjima qilish" }).click();
+  await expect(page.getByText("Iltimos, tarjima qilinadigan matnni kiriting")).toBeVisible();
+  await page.getByLabel("Matn (istalgan tilda)").fill("Where is the nearest pharmacy?");
+  await page.getByRole("button", { name: "Tarjima qilish" }).click();
+  await expect(page.getByText("AI xizmati ulanmagan — tarjimon hozircha ishlamaydi.")).toBeVisible();
+  await noHorizontalScroll(page);
+});

@@ -177,8 +177,10 @@ Saytdagi “Imkoniyatlar holati” sahifasi (`/holat`) joriy holatni jonli ko‘
 - So‘z va gap tahlili — qoidaviy; aniqligi `lexeme` lug‘atining to‘liqligiga bog‘liq. Natijalar “lug‘at / qoida / taxmin” deb belgilanadi.
 - DOCX/PPTX ichidagi diagramma va SmartArt matni o‘girilmaydi (ogohlantirish beriladi); XLSX varaq nomlari formulalar buzilmasligi uchun o‘zgartirilmaydi.
 
-**Hali ulanmagan**
-- AI tavsiyalari (imlo, gap tahlili) — kod tayyor, `ANTHROPIC_API_KEY` kerak.
+**Hali ulanmagan** (kod tayyor, `ANTHROPIC_API_KEY` kerak)
+- AI tavsiyalari (imlo, gap tahlili).
+- **So‘z tahlilchisi** (`/soz-tahlilchisi`) — ma’no, 3–6 sinonim, antonimlar (bo‘lmasa “Antonimi mavjud emas”), 1–2 misol, so‘z turkumi. Natija “AI taxmini” deb belgilanadi va 30 kun keshlanadi.
+- **Turistlar uchun tarjimon** (`/tarjima`) — istalgan tildan zamonaviy adabiy o‘zbek tiliga (lotin), aniqlangan til bilan; matn saqlanmaydi.
 - Audio/video transkripsiyasi — xizmat tanlanmagan; interfeys buni ochiq aytadi.
 - Rasmdagi yozuvni almashtirish — amalga oshirilmagan.
 - Eski DOC/XLS/PPT — bevosita qo‘llanmaydi, qayta saqlash yo‘riqnomasi ko‘rsatiladi.

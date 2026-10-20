@@ -1,10 +1,12 @@
 import {
   Activity,
   ArrowLeftRight,
+  BookA,
   BookMarked,
   ChartNoAxesColumn,
   GraduationCap,
   History,
+  Languages,
   House,
   Microscope,
   Quote,
@@ -57,6 +59,8 @@ export const MAIN_NAV: NavItem[] = [
 
 export const EXTRA_NAV: NavItem[] = [
   { href: "/tahlil", label: "So‘z va gap tahlili", short: "Tahlil", icon: Microscope, description: "So‘z tarkibi, bo‘g‘inlar va gap bo‘laklari." },
+  { href: "/soz-tahlilchisi", label: "So‘z tahlilchisi", short: "Tahlilchi", icon: BookA, description: "Ma’no, sinonim, antonim, misol va so‘z turkumi (AI)." },
+  { href: "/tarjima", label: "Turistlar uchun tarjimon", short: "Tarjimon", icon: Languages, description: "Istalgan tildagi matnni o‘zbek tiliga tarjima (AI)." },
   { href: "/lugatim", label: "Shaxsiy lug‘at", short: "Lug‘atim", icon: BookMarked, description: "Saqlangan so‘z va iboralaringiz." },
   { href: "/mashqlar", label: "Mashqlar", short: "Mashqlar", icon: GraduationCap, description: "Tasdiqlangan ma’lumotlar asosidagi mashqlar va kartochkalar." },
   { href: "/statistika", label: "Matn statistikasi", short: "Statistika", icon: ChartNoAxesColumn, description: "Belgilar, so‘zlar, gaplar va yozuv tarkibi." },

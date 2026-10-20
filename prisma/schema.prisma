@@ -578,3 +578,11 @@ model AuditLog {
   @@index([createdAt])
   @@index([entityType, entityId])
 }
+
+/// "So‘z tahlilchisi" AI natijalari keshi (AI taxmini; tasdiqlangan lug‘at ma’lumoti emas)
+model AiWordCache {
+  key       String   @id
+  word      String
+  result    Json
+  createdAt DateTime @default(now())
+}

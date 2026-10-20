@@ -94,3 +94,20 @@ describe("tashqi xizmatlar ulanmaganda natija to‘qilmaydi", () => {
 });
 
 afterAll(() => prisma.$disconnect());
+
+describe("yangi AI bo‘limlari — server (kalit yo‘q)", () => {
+  it("so‘z tahlilchisi: bo‘sh so‘z 400, AI ulanmagan 503", async () => {
+    const c = new Client();
+    const empty = await c.json("/api/ai/word-analyzer", { method: "POST", json: { word: "  " } });
+    expect(empty.status).toBe(400);
+    expect(empty.body.error).toBe("Iltimos, so‘z kiriting.");
+    const r = await c.json("/api/ai/word-analyzer", { method: "POST", json: { word: "kitob" } });
+    expect(r.status).toBe(503);
+  });
+  it("tarjimon: bo‘sh matn — 8-qoida xabari (AI chaqirilmaydi), oddiy matn — 503", async () => {
+    const c = new Client();
+    const empty = await c.json("/api/ai/translate", { method: "POST", json: { text: "" } });
+    expect(empty.body).toEqual({ source_language: "", translation: "Matnni tushunib bo'lmadi, iltimos qaytadan yozing.", understood: false });
+    expect((await c.json("/api/ai/translate", { method: "POST", json: { text: "Hello" } })).status).toBe(503);
+  });
+});

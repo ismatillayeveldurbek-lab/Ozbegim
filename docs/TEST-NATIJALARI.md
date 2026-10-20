@@ -1,6 +1,6 @@
 # Test natijalari
 
-Sana: 2026-10-19 · muhit: Linux, Node v22.22.0, PostgreSQL 16, Chromium (Playwright 1.56), prod build (`next build && next start`) + `npm run worker`.
+Sana: 2026-10-20 · muhit: Linux, Node v22.22.0, PostgreSQL 16, Chromium (Playwright 1.56), prod build (`next build && next start`) + `npm run worker`.
 
 ## Buyruqlar va natijalar
 
@@ -12,15 +12,17 @@ xatosiz
 $ npm run build
 muvaffaqiyatli (3 ta Turbopack ogohlantirishi: fayl tizimiga dinamik murojaat — storage/ocr modullari)
 $ npm test
- Test Files  9 passed (9)
-      Tests  89 passed | 1 skipped (90)
+ Test Files  11 passed (11)
+      Tests  102 passed | 1 skipped (103)
 $ npm run test:e2e
-14 passed (27.1s)
+18 passed (22.2s)
 ```
 
 ## Vitest (birlik + integratsion) — har bir test
 
 ```
+ ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > rasmdan matn ajratiladi va tekshirish uchun qaytariladi
+ ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > skanerlangan PDF (faqat rasm) sahifalari OCR qilinadi
  ✓ tests/integration/phase1.test.ts > autentifikatsiya va rollar > ro‘yxatdan o‘tgan birinchi foydalanuvchi ham admin bo‘lmaydi; role maydonini yuborib bo‘lmaydi
  ✓ tests/integration/phase1.test.ts > autentifikatsiya va rollar > oddiy foydalanuvchi admin API’ga kira olmaydi, mehmon esa 401 oladi
  ✓ tests/integration/phase1.test.ts > autentifikatsiya va rollar > boshqa saytdan kelgan (Origin mos emas) so‘rov rad etiladi
@@ -42,8 +44,6 @@ $ npm run test:e2e
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > boshqa foydalanuvchi shaxsiy yozuvni ocha, o‘zgartira, o‘chira, eksport qila olmaydi
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > boshqa foydalanuvchining papkasiga yozuv qo‘shib bo‘lmaydi
  ✓ tests/integration/phase2.test.ts > shaxsiy lug‘at va tarix > tarix faqat rozilik bilan; meta rejimida matn saqlanmaydi; o‘chirish
- ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > rasmdan matn ajratiladi va tekshirish uchun qaytariladi
- ✓ tests/unit/ocr.test.ts > OCR (Tesseract) > skanerlangan PDF (faqat rasm) sahifalari OCR qilinadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > XLSX yuklanadi, ishlanadi va natijada formulalar/sonlar saqlanadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > boshqa foydalanuvchi faylni ko‘ra, yuklab ola, o‘chira olmaydi
  ✓ tests/integration/files.test.ts > fayl vazifalari > qo‘llanmaydigan, mos kelmaydigan va katta fayllar rad etiladi
@@ -51,13 +51,6 @@ $ npm run test:e2e
  ✓ tests/integration/files.test.ts > fayl vazifalari > foydalanuvchi faylni o‘chiradi — saqlashdagi obyektlar ham o‘chadi
  ✓ tests/integration/files.test.ts > fayl vazifalari > muddati tugagan fayllar tozalanadi, muddati tugamaganlar qoladi
  ✓ tests/integration/files.test.ts > fayl vazifalari > bekor qilish va qayta urinish
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > so‘z: bo‘g‘in, harflar, lug‘atdagi o‘zak (namuna lug‘at)
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > kirill kiritish ham tahlil qilinadi
- ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > gap tahlili
- ✓ tests/integration/phase3.test.ts > mashqlar > namuna (DEMO) va tekshirilmagan yozuvlar savollar soniga kirmaydi
- ✓ tests/integration/phase3.test.ts > mashqlar > savol → javob → tushuntirish; urinish tarixga yoziladi; tokenni soxtalashtirib bo‘lmaydi
- ✓ tests/integration/phase3.test.ts > mashqlar > kartochkalar: baho bo‘yicha keyingi takrorlash vaqti
- ✓ tests/integration/phase3.test.ts > tashqi xizmatlar ulanmaganda natija to‘qilmaydi > AI endpointlari 503 qaytaradi; holat sahifasi “ulanmagan” deydi
  ✓ tests/unit/files.test.ts > DOCX > run’lar orasida bo‘lingan Sh/O‘ birikmalari va bezaklar saqlanadi
  ✓ tests/unit/files.test.ts > DOCX > matn qutisi (ichma-ich paragraf) to‘g‘ri ishlanadi
  ✓ tests/unit/files.test.ts > PPTX > slayd matni o‘giriladi, tuzilma saqlanadi
@@ -71,6 +64,20 @@ $ npm run test:e2e
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > bo‘sh, mos kelmaydigan, eski, makrosli, media va noma’lum formatlar
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > buzilgan arxiv, ZIP bomb va zararli yo‘llar
  ✓ tests/unit/files.test.ts > Fayllarni rad etish > Windows-1251 kodlashdagi kirill TXT o‘qiladi
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > so‘z: bo‘g‘in, harflar, lug‘atdagi o‘zak (namuna lug‘at)
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > kirill kiritish ham tahlil qilinadi
+ ✓ tests/integration/phase3.test.ts > so‘z va gap tahlili API > gap tahlili
+ ✓ tests/integration/phase3.test.ts > mashqlar > namuna (DEMO) va tekshirilmagan yozuvlar savollar soniga kirmaydi
+ ✓ tests/integration/phase3.test.ts > mashqlar > savol → javob → tushuntirish; urinish tarixga yoziladi; tokenni soxtalashtirib bo‘lmaydi
+ ✓ tests/integration/phase3.test.ts > mashqlar > kartochkalar: baho bo‘yicha keyingi takrorlash vaqti
+ ✓ tests/integration/phase3.test.ts > tashqi xizmatlar ulanmaganda natija to‘qilmaydi > AI endpointlari 503 qaytaradi; holat sahifasi “ulanmagan” deydi
+ ✓ tests/integration/phase3.test.ts > yangi AI bo‘limlari — server (kalit yo‘q) > so‘z tahlilchisi: bo‘sh so‘z 400, AI ulanmagan 503
+ ✓ tests/integration/phase3.test.ts > yangi AI bo‘limlari — server (kalit yo‘q) > tarjimon: bo‘sh matn — 8-qoida xabari (AI chaqirilmaydi), oddiy matn — 503
+ ✓ tests/integration/ai-mock.test.ts > So‘z tahlilchisi (soxta AI bilan) > ko‘rsatma yuboriladi, ```json olib tashlanadi, natija keshlanadi
+ ✓ tests/integration/ai-mock.test.ts > So‘z tahlilchisi (soxta AI bilan) > topilmagan so‘z keshlanmaydi; buzilgan JSON tushunarli xato beradi
+ ✓ tests/integration/ai-mock.test.ts > Turistlar tarjimoni (soxta AI bilan) > tarjima, til va qoidalar ko‘rsatmasi
+ ✓ tests/integration/ai-mock.test.ts > Turistlar tarjimoni (soxta AI bilan) > bo‘sh yoki belgilardan iborat matn AI’ga yuborilmaydi
+ ✓ tests/integration/ai-mock.test.ts > Turistlar tarjimoni (soxta AI bilan) > model 8-qoida xabarini qaytarsa — tushunilmadi holati
  ✓ tests/unit/analysis.test.ts > bo‘g‘in va harf-tovush > bo‘g‘inlarga ajratish
  ✓ tests/unit/analysis.test.ts > bo‘g‘in va harf-tovush > harflar soni: o‘, sh, ng — bitta harf; tutuq — belgi
  ✓ tests/unit/analysis.test.ts > morfologik tahlil > ot: ko‘plik, egalik, kelishik
@@ -111,6 +118,12 @@ $ npm run test:e2e
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > lotin/kirill va apostrof variantlari bitta kalit
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > turli so‘zlar birlashmaydi
  ✓ tests/unit/translit.test.ts > qidiruv kaliti > tinish belgilari va tirelar
+ ✓ tests/unit/ai-features.test.ts > AI JSON’ni xavfsiz parse qilish > toza JSON, ```json bloki, atrofida matn, satr ichidagi qavslar
+ ✓ tests/unit/ai-features.test.ts > AI JSON’ni xavfsiz parse qilish > buzilgan javob — istisno emas, null
+ ✓ tests/unit/ai-features.test.ts > So‘z tahlilchisi > kiritishni tekshirish
+ ✓ tests/unit/ai-features.test.ts > So‘z tahlilchisi > javobni normallashtirish: sinonim ≤ 6, misol massiv yoki satr, turkum
+ ✓ tests/unit/ai-features.test.ts > So‘z tahlilchisi > topilmagan so‘z va noto‘g‘ri tuzilma
+ ✓ tests/unit/ai-features.test.ts > Turistlar tarjimoni > javobni normallashtirish va 8-qoida
 ```
 
 ## Playwright (kompyuter 1366×900 va telefon 390×844)
@@ -123,15 +136,24 @@ $ npm run test:e2e
   ✓   5 [kompyuter] › tests/e2e/app.spec.ts:81:5 › imlo: qabul qilish, rad etish va ortga qaytarish
   ✓   6 [kompyuter] › tests/e2e/app.spec.ts:97:5 › fayl: TXT yuklanadi, ishlanadi va yuklab olinadi; oddiy foydalanuvchiga admin yopiq
   ✓   7 [kompyuter] › tests/e2e/app.spec.ts:111:5 › tahlil va statistika sahifalari
-  ✓   8 [telefon] › tests/e2e/app.spec.ts:20:5 › bosh sahifa: to‘rtta asosiy vosita birinchi, gorizontal siljish yo‘q
-  ✓   9 [telefon] › tests/e2e/app.spec.ts:32:5 › navigatsiya: telefonda pastki menyu va “Yana”, kompyuterda chap panel
-  ✓  10 [telefon] › tests/e2e/app.spec.ts:48:5 › konvertor: O‘zbekiston → Ўзбекистон, havola o‘zgarmaydi, yo‘nalish almashtirilganda natija yo‘qolmaydi
-  ✓  11 [telefon] › tests/e2e/app.spec.ts:58:5 › mavjud bo‘lmagan so‘z: aniq xabar va “Izohlar” bo‘limi; ikki foydalanuvchi izohni ko‘radi
-  ✓  12 [telefon] › tests/e2e/app.spec.ts:81:5 › imlo: qabul qilish, rad etish va ortga qaytarish
-  ✓  13 [telefon] › tests/e2e/app.spec.ts:97:5 › fayl: TXT yuklanadi, ishlanadi va yuklab olinadi; oddiy foydalanuvchiga admin yopiq
-  ✓  14 [telefon] › tests/e2e/app.spec.ts:111:5 › tahlil va statistika sahifalari
+  ✓   8 [kompyuter] › tests/e2e/app.spec.ts:122:5 › so‘z tahlilchisi: bo‘sh so‘z xabari, Enter bilan yuborish, AI ulanmagan holat
+  ✓   9 [kompyuter] › tests/e2e/app.spec.ts:134:5 › turistlar tarjimoni: bo‘sh matn xabari va AI ulanmagan holat
+  ✓  10 [telefon] › tests/e2e/app.spec.ts:20:5 › bosh sahifa: to‘rtta asosiy vosita birinchi, gorizontal siljish yo‘q
+  ✓  11 [telefon] › tests/e2e/app.spec.ts:32:5 › navigatsiya: telefonda pastki menyu va “Yana”, kompyuterda chap panel
+  ✓  12 [telefon] › tests/e2e/app.spec.ts:48:5 › konvertor: O‘zbekiston → Ўзбекистон, havola o‘zgarmaydi, yo‘nalish almashtirilganda natija yo‘qolmaydi
+  ✓  13 [telefon] › tests/e2e/app.spec.ts:58:5 › mavjud bo‘lmagan so‘z: aniq xabar va “Izohlar” bo‘limi; ikki foydalanuvchi izohni ko‘radi
+  ✓  14 [telefon] › tests/e2e/app.spec.ts:81:5 › imlo: qabul qilish, rad etish va ortga qaytarish
+  ✓  15 [telefon] › tests/e2e/app.spec.ts:97:5 › fayl: TXT yuklanadi, ishlanadi va yuklab olinadi; oddiy foydalanuvchiga admin yopiq
+  ✓  16 [telefon] › tests/e2e/app.spec.ts:111:5 › tahlil va statistika sahifalari
+  ✓  17 [telefon] › tests/e2e/app.spec.ts:122:5 › so‘z tahlilchisi: bo‘sh so‘z xabari, Enter bilan yuborish, AI ulanmagan holat
+  ✓  18 [telefon] › tests/e2e/app.spec.ts:134:5 › turistlar tarjimoni: bo‘sh matn xabari va AI ulanmagan holat
 ```
 
 OCR testlari (rasm va skanerlangan PDF) serverda Tesseract (uzb, uzb_cyrl) va poppler-utils o‘rnatilgan holda o‘tdi; Tesseract bo‘lmagan muhitda ular o‘tkazib yuboriladi. “OCR ulanmagan” testi esa OCR yoqilgan muhitda o‘tkazib yuboriladi (↓).
 
 Docker obrazi bu muhitda yig‘ilmadi (konteyner ichidan npm reestriga ulanish sandbox tarmog‘ida uzildi) — sinalmagan.
+
+
+## AI bo‘limlari
+
+AI kaliti bu muhitda yo‘q. So‘z tahlilchisi va tarjimonning to‘liq yo‘li (SDK so‘rovi, ko‘rsatma, ```json tozalash, tekshirish, kesh) `tests/integration/ai-mock.test.ts` da **lokal soxta Anthropic API serveri** bilan sinaldi; haqiqiy model javobi sinalmagan. Saytda soxta natija ishlatilmaydi — kalit bo‘lmasa “Xizmat ulanmagan” ko‘rsatiladi.
