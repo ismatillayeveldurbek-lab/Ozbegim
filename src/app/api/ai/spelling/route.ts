@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { aiJson } from "@/lib/server/ai";
+import { toTypographic } from "@/lib/uz/alphabet";
 import { handle, HttpError, json, readJson, requireUser } from "@/lib/server/http";
 import { enforceRateLimit } from "@/lib/server/rate-limit";
 
@@ -32,6 +33,8 @@ export const POST = handle(async (req: Request) => {
   await enforceRateLimit(`ai:${user.id}`, 20, 3600);
   const r = await aiJson<{ suggestions: Array<{ original: string; replacement: string; explanation: string }> }>(SYSTEM, body.text, SCHEMA);
   // Matnda uchramaydigan "tavsiyalar" tashlab yuboriladi.
-  const suggestions = r.suggestions.filter((s) => s.original && s.original !== s.replacement && body.text.includes(s.original)).slice(0, 100);
+  const suggestions = r.suggestions.filter((s) => s.original && s.original !== s.replacement && body.text.includes(s.original)).slice(0, 100)
+    // "original" matndagi bilan aynan mos qolishi kerak — faqat tavsiya va izoh tipografik qilinadi
+    .map((s) => ({ ...s, replacement: toTypographic(s.replacement), explanation: toTypographic(s.explanation ?? "") }));
   return json({ suggestions, label: "Taxmin" });
 });

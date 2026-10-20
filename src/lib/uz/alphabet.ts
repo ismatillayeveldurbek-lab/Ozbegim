@@ -46,3 +46,14 @@ export const UZ_LATIN_ALPHABET = [
   "a", "b", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "x", "y", "z",
   "o‘", "g‘", "sh", "ch", "ng",
 ];
+
+/**
+ * Lotin matndagi oddiy apostroflarni tipografik ko‘rinishga keltiradi: o'/g' → o‘/g‘, tutuq → ’.
+ * Faqat harflar orasidagi (yoki so‘z oxiridagi g') belgilar o‘zgaradi — qo‘shtirnoqlarga tegilmaydi.
+ */
+export function toTypographic(s: string): string {
+  return s
+    .replace(/([oOgG])['`ʻ´](?=\p{L})/gu, "$1‘")
+    .replace(/(?<=\p{L})([gG])['`ʻ´](?!\p{L})/gu, "$1‘")
+    .replace(/(?<=\p{L})['`ʼ´](?=\p{L})/gu, "’");
+}

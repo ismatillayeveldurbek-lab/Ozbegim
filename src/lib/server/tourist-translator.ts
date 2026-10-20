@@ -3,6 +3,7 @@
  * Ko‘rsatma buyurtmachi bergan qoidalar bo‘yicha; javob faqat JSON.
  */
 import { z } from "zod";
+import { toTypographic } from "@/lib/uz/alphabet";
 import { aiJson } from "./ai";
 import { HttpError } from "./http";
 
@@ -41,7 +42,7 @@ export function normalizeTranslation(raw: unknown): TranslationResult {
   if (!p.success) throw new HttpError(502, "Xizmat javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
   const t = p.data.translation.trim();
   const understood = !!t && !t.includes("tushunib bo'lmadi") && !t.includes("tushunib bo‘lmadi");
-  return { source_language: p.data.source_language, translation: understood ? t : NOT_UNDERSTOOD, understood };
+  return { source_language: p.data.source_language, translation: understood ? toTypographic(t) : NOT_UNDERSTOOD, understood };
 }
 
 export async function translateForTourist(text: string): Promise<TranslationResult> {

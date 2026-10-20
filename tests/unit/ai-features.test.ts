@@ -47,3 +47,12 @@ describe("Turistlar tarjimoni", () => {
     expect(() => normalizeTranslation({ text: "x" })).toThrow(/kutilgan/);
   });
 });
+
+describe("javoblardagi apostroflarni tipografik qilish", () => {
+  it("o'/g' → o‘/g‘, tutuq → ’, qo‘shtirnoqqa tegmaydi", async () => {
+    const { toTypographic } = await import("@/lib/uz/alphabet");
+    expect(toTypographic("o'qish, to'g'ri, tog' va bog'")).toBe("o‘qish, to‘g‘ri, tog‘ va bog‘");
+    expect(toTypographic("ta'lim va ma'lumot")).toBe("ta’lim va ma’lumot");
+    expect(toTypographic("U 'salom' dedi")).toBe("U 'salom' dedi");
+  });
+});

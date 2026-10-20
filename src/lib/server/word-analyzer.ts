@@ -5,6 +5,7 @@
  */
 import { z } from "zod";
 import type { Prisma } from "@generated/prisma/client";
+import { toTypographic } from "@/lib/uz/alphabet";
 import { normalizeKey } from "@/lib/uz/normalize";
 import { aiJson } from "./ai";
 import { prisma } from "./db";
@@ -51,13 +52,26 @@ export function normalizeWordAnalysis(raw: unknown): WordAnalysis {
   if (!p.success) throw new HttpError(502, "Xizmat javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
   const misol = p.data.misol;
   const misollar = (Array.isArray(misol) ? misol : misol ? [misol] : []).map((m) => m.trim()).filter(Boolean).slice(0, 2);
-  return {
+  return typographicAnalysis({
     found: true,
     manosi: p.data.manosi,
     sinonimlar: p.data.sinonimlar.slice(0, 6),
     antonimlar: p.data.antonimlar.slice(0, 6),
     misollar,
     turkum: p.data.turkum || "aniqlanmadi",
+  });
+}
+
+/** Javobdagi o'/g' va tutuqni saytdagi tipografik ko‘rinishga keltiradi (keshdagi eski yozuvlar uchun ham). */
+function typographicAnalysis(r: WordAnalysis): WordAnalysis {
+  if (!r.found) return r;
+  return {
+    ...r,
+    manosi: toTypographic(r.manosi),
+    sinonimlar: r.sinonimlar.map(toTypographic),
+    antonimlar: r.antonimlar.map(toTypographic),
+    misollar: r.misollar.map(toTypographic),
+    turkum: toTypographic(r.turkum),
   };
 }
 
@@ -66,7 +80,7 @@ const CACHE_DAYS = 30;
 export async function analyzeWordAi(word: string): Promise<{ result: WordAnalysis; cached: boolean }> {
   const key = normalizeKey(word);
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
-  if (hit && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: hit.result as unknown as WordAnalysis, cached: true };
+  if (hit && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: typographicAnalysis(hit.result as unknown as WordAnalysis), cached: true };
   const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000 });
   const result = normalizeWordAnalysis(raw);
   // Faqat topilgan so‘zlar keshlanadi (topilmaganlar keyinroq qayta urinib ko‘rilishi mumkin).
