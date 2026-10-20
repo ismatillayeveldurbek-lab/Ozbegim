@@ -31,6 +31,11 @@ export const LLM_MODEL = () => process.env.LLM_MODEL || "openai/gpt-oss-120b";
 
 /** Keyingi xizmatga o‘tish mumkin bo‘lgan xatolar: limit, vaqtinchalik nosozlik, ulanish. */
 const RETRYABLE = new Set(["AI_RATE_LIMIT", "AI_ERROR", "AI_AUTH", "AI_BAD_JSON"]);
+/** Bitta xizmatni kutish chegarasi; oshsa — keyingisiga o‘tiladi. */
+const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 25_000);
+/** Limitga yetgan yoki javob bermagan xizmat bir muddat chetlab o‘tiladi (jarayon xotirasida). */
+const cooldownUntil = new Map<Provider, number>();
+const COOLDOWN_MS: Record<string, number> = { AI_RATE_LIMIT: 15 * 60_000, AI_AUTH: 30 * 60_000, AI_ERROR: 2 * 60_000 };
 
 /**
  * @param schema berilsa — strukturali chiqish (output_config.format); berilmasa — javob matni
@@ -39,18 +44,24 @@ const RETRYABLE = new Set(["AI_RATE_LIMIT", "AI_ERROR", "AI_AUTH", "AI_BAD_JSON"
 export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number } = {}): Promise<T> {
   const providers = aiProviders();
   if (!providers.length) throw new HttpError(503, "Xizmat ulanmagan.", "AI_NOT_CONNECTED");
+  // Hammasi "dam olayotgan" bo‘lsa — baribir hammasi sinaladi
+  const ready = providers.filter((p) => (cooldownUntil.get(p) ?? 0) < Date.now());
   let lastError: unknown;
-  for (const provider of providers) {
+  for (const provider of ready.length ? ready : providers) {
+    const started = Date.now();
     try {
       const text =
         provider === "gemini" ? await geminiText(system, user, schema, opts) : provider === "openai" ? await openaiText(system, user, schema, opts) : await anthropicText(system, user, schema, opts);
       const parsed = parseAiJson(text);
       if (parsed === null || typeof parsed !== "object") throw new HttpError(502, "Javobni o‘qib bo‘lmadi. Qayta urinib ko‘ring.", "AI_BAD_JSON");
+      console.log(`AI: "${provider}" ${Date.now() - started} ms`);
       return parsed as T;
     } catch (e) {
       lastError = e;
       if (!(e instanceof HttpError && e.code && RETRYABLE.has(e.code))) throw e;
-      console.error(`AI xizmati "${provider}" ishlamadi (${e.code}), keyingisi sinaladi`);
+      const pause = COOLDOWN_MS[e.code] ?? 0;
+      if (pause) cooldownUntil.set(provider, Date.now() + pause);
+      console.error(`AI xizmati "${provider}" ishlamadi (${e.code}, ${Date.now() - started} ms), ${Math.round(pause / 60_000)} daqiqa chetlab o‘tiladi`);
     }
   }
   throw lastError;
@@ -73,7 +84,7 @@ async function openaiText(system: string, user: string, schema: Record<string, u
         max_tokens: Math.max(opts.maxTokens ?? 8000, 4000),
         ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
   let res: Response;
   try {
@@ -131,7 +142,7 @@ type GeminiResponse = {
 
 /**
  * Gemini generateContent (REST). Tezlik uchun fikrlash darajasi past ("low", GEMINI_THINKING bilan o‘zgaradi).
- * 400 bo‘lsa — avval thinkingConfig’siz, so‘ng schema’siz qayta so‘raladi; 5xx bo‘lsa — 2 marta qayta urinish.
+ * 400 bo‘lsa — avval thinkingConfig’siz, so‘ng schema’siz qayta so‘raladi; 5xx bo‘lsa — 1 marta qayta urinish.
  */
 async function geminiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }) {
   const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
@@ -151,7 +162,7 @@ async function geminiText(system: string, user: string, schema: Record<string, u
           ...(withThinking && thinking ? { thinkingConfig: { thinkingLevel: thinking } } : {}),
         },
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
   let res: Response;
   try {
@@ -161,7 +172,7 @@ async function geminiText(system: string, user: string, schema: Record<string, u
       res = await send(withThinking, withSchema);
       if (res.status === 400 && withThinking) withThinking = false;
       else if (res.status === 400 && withSchema) withSchema = false;
-      else if (res.status >= 500 && attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      else if (res.status >= 500 && attempt < 1) await new Promise((r) => setTimeout(r, 1500));
       else break;
       await res.body?.cancel();
     }
