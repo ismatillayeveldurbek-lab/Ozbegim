@@ -11,6 +11,10 @@ export interface PdfText {
 
 export async function extractPdfText(buf: Buffer): Promise<PdfText> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // Node’da pdf.js "soxta ishchi"dan foydalanadi. Ishchini statik import qilamiz — aks holda
+  // serverless paketlarga (Vercel, standalone) pdf.worker.mjs kirmay qoladi.
+  const g = globalThis as { pdfjsWorker?: unknown };
+  if (!g.pdfjsWorker) g.pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   const task = pdfjs.getDocument({
     data: new Uint8Array(buf),
     disableFontFace: true,

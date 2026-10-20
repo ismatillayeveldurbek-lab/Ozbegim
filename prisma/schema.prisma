@@ -590,3 +590,10 @@ model AiWordCache {
   result    Json
   createdAt DateTime @default(now())
 }
+
+/// STORAGE_DRIVER=db: fayl mazmuni bazada (diski yo‘q serverless joylashtirishlar uchun, masalan Vercel)
+model StoredBlob {
+  key       String   @id
+  data      Bytes
+  createdAt DateTime @default(now())
+}

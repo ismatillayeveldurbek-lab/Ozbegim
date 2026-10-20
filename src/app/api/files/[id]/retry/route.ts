@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/server/db";
-import { drainQueue } from "@/lib/server/file-jobs";
+import { scheduleInlineProcessing } from "@/lib/server/inline-after";
 import { handle, HttpError, json, requireUser } from "@/lib/server/http";
+
+export const maxDuration = 300;
 
 export const POST = handle(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const user = await requireUser(req);
@@ -12,6 +14,6 @@ export const POST = handle(async (req: Request, { params }: { params: Promise<{ 
     where: { id },
     data: { status: "QUEUED", cancelRequested: false, errorCode: null, errorMessage: null, attempts: 0, lockedAt: null, finishedAt: null },
   });
-  if (process.env.FILE_PROCESSING === "inline") void drainQueue(5).catch(() => {});
+  scheduleInlineProcessing();
   return json({ ok: true });
 });

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { detectFile, FileRejectError } from "@/lib/files/detect";
 import { prisma } from "@/lib/server/db";
-import { drainQueue, expiry, MAX_FILE_MB, serializeJob, storeObject } from "@/lib/server/file-jobs";
+import { createJobWithInput, expiry, MAX_FILE_MB, serializeJob } from "@/lib/server/file-jobs";
+import { scheduleInlineProcessing } from "@/lib/server/inline-after";
 import { handle, HttpError, json, requireUser } from "@/lib/server/http";
 import { enforceRateLimit } from "@/lib/server/rate-limit";
 import { recordHistory } from "@/lib/server/history";
@@ -16,6 +17,9 @@ const optionsSchema = z.object({
 });
 
 /** Foydalanuvchining fayl vazifalari (faqat o‘ziniki). */
+/** Inline rejimda fayl javobdan keyin shu funksiyada ishlanadi (Vercel Hobby: 300 s gacha). */
+export const maxDuration = 300;
+
 export const GET = handle(async (req: Request) => {
   const user = await requireUser(req);
   const jobs = await prisma.fileJob.findMany({ where: { userId: user.id, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" }, take: 100 });
@@ -50,13 +54,18 @@ export const POST = handle(async (req: Request) => {
   }
 
   const expiresAt = expiry();
-  const job = await prisma.fileJob.create({
-    data: { userId: user.id, originalName: name, format, sizeBytes: buf.length, direction: options.direction, options, inputKey: "pending", expiresAt },
+  // Avval fayl saqlanadi, so‘ng vazifa tayyor kalit bilan yaratiladi: navbatda hech qachon
+  // fayli hali yozilmagan vazifa ko‘rinmaydi (parallel ishchi uni olib qo‘yolmaydi).
+  const saved = await createJobWithInput(user.id, buf, {
+    originalName: name,
+    format,
+    sizeBytes: buf.length,
+    direction: options.direction,
+    options,
+    expiresAt,
   });
-  const inputKey = await storeObject(user.id, "input", buf, expiresAt, job.id);
-  const saved = await prisma.fileJob.update({ where: { id: job.id }, data: { inputKey } });
-  await recordHistory(user, { type: "file", summary: `Fayl yuklandi: ${name}`, meta: { format, sizeBytes: buf.length, jobId: job.id } });
+  await recordHistory(user, { type: "file", summary: `Fayl yuklandi: ${name}`, meta: { format, sizeBytes: buf.length, jobId: saved.id } });
 
-  if (process.env.FILE_PROCESSING === "inline") void drainQueue(5).catch(() => {});
+  scheduleInlineProcessing();
   return json(serializeJob(saved), { status: 201 });
 });

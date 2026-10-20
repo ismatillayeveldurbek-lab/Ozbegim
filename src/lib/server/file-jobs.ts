@@ -3,12 +3,14 @@
  */
 import { convertFile, type ConvertOptions } from "@/lib/files/convert";
 import { FileRejectError, type FileFormat } from "@/lib/files/detect";
-import type { FileJob } from "@generated/prisma/client";
+import type { FileJob, Prisma } from "@generated/prisma/client";
 import { prisma } from "./db";
-import { newObjectKey, storage } from "./storage";
+import { newObjectKey, ObjectMissingError, storage } from "./storage";
 
 export const RETENTION_HOURS = Math.max(1, Number(process.env.FILE_RETENTION_HOURS ?? 24));
 export const MAX_FILE_MB = Math.max(1, Number(process.env.FILE_MAX_MB ?? 20));
+/** Bitta javob hajmi chegarasi (masalan, Vercel funksiyalarida 4,5 MB). 0 — cheklanmagan. */
+export const MAX_RESPONSE_MB = Number(process.env.MAX_RESPONSE_MB ?? 0);
 const MAX_ATTEMPTS = 3;
 const STALE_MINUTES = 10;
 
@@ -27,6 +29,29 @@ export async function deleteObject(key: string | null | undefined) {
   if (!key) return;
   await storage().delete(key).catch(() => {});
   await prisma.storedObject.updateMany({ where: { key, deletedAt: null }, data: { deletedAt: new Date() } });
+}
+
+/**
+ * Kirish faylini saqlab, so‘ng vazifa va saqlash yozuvini bitta tranzaksiyada yaratadi.
+ * Tranzaksiya muvaffaqiyatsiz bo‘lsa, saqlangan fayl o‘chiriladi (yetim fayl qolmaydi).
+ */
+export async function createJobWithInput(
+  userId: string,
+  data: Buffer,
+  job: { originalName: string; format: string; sizeBytes: number; direction: string; options: object; expiresAt: Date },
+): Promise<FileJob> {
+  const inputKey = newObjectKey(userId, "input");
+  await storage().put(inputKey, data);
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const created = await tx.fileJob.create({ data: { ...job, userId, options: job.options as Prisma.InputJsonValue, inputKey } });
+      await tx.storedObject.create({ data: { key: inputKey, ownerId: userId, kind: "input", sizeBytes: data.length, expiresAt: job.expiresAt, fileJobId: created.id } });
+      return created;
+    });
+  } catch (e) {
+    await storage().delete(inputKey).catch(() => {});
+    throw e;
+  }
 }
 
 /** Navbatdagi bitta vazifani atomik ravishda egallaydi. */
@@ -61,6 +86,8 @@ export async function processJob(id: string): Promise<FileJob | null> {
   try {
     const input = await storage().get(job.inputKey);
     const outcome = await convertFile(job.format as FileFormat, job.originalName, input, job.options as unknown as ConvertOptions);
+    if (MAX_RESPONSE_MB && outcome.kind === "file" && outcome.data.length > MAX_RESPONSE_MB * 1024 * 1024)
+      throw new FileRejectError("OUTPUT_TOO_LARGE", `Natija fayli juda katta (${(outcome.data.length / 1024 / 1024).toFixed(1)} MB). Bu serverda ${MAX_RESPONSE_MB} MB gacha natija yuklab olinadi — faylni qismlarga bo‘lib yuklang.`);
     const fresh = await prisma.fileJob.findUnique({ where: { id } });
     if (!fresh || fresh.cancelRequested) {
       return prisma.fileJob.update({ where: { id }, data: { status: "CANCELLED", finishedAt: new Date(), lockedAt: null } });
@@ -89,16 +116,19 @@ export async function processJob(id: string): Promise<FileJob | null> {
       where: { id },
       data: { status: "NEEDS_REVIEW", textKey, warnings: outcome.warnings, direction: outcome.direction, finishedAt: new Date(), lockedAt: null, errorCode: null, errorMessage: null },
     });
-  } catch (e) {
-    const known = e instanceof FileRejectError;
+  } catch (err) {
+    let e = err;
+    if (e instanceof ObjectMissingError) e = new FileRejectError("INPUT_MISSING", "Yuklangan fayl serverda topilmadi (muddati o‘tgan yoki server qayta ishga tushgan). Faylni qayta yuklang.");
+    const known = e instanceof FileRejectError ? e : null;
     // Foydalanuvchi matni loglarga yozilmaydi — faqat xato kodi.
     if (!known) console.error(`[file-job ${id}] kutilmagan xato:`, e instanceof Error ? e.name : "noma’lum");
+    if (!known && process.env.DEBUG_JOBS === "1") console.error(`[file-job ${id}]`, e instanceof Error ? `${e.message.slice(0, 300)}\n${e.stack?.split("\n").slice(1, 6).join("\n")}` : e);
     return prisma.fileJob.update({
       where: { id },
       data: {
         status: "FAILED",
-        errorCode: known ? e.code : "INTERNAL",
-        errorMessage: known ? e.message : "Faylni ishlashda kutilmagan xato yuz berdi. Qayta urinib ko‘ring yoki boshqa formatda saqlang.",
+        errorCode: known ? known.code : "INTERNAL",
+        errorMessage: known ? known.message : "Faylni ishlashda kutilmagan xato yuz berdi. Qayta urinib ko‘ring yoki boshqa formatda saqlang.",
         finishedAt: new Date(),
         lockedAt: null,
       },
@@ -152,4 +182,5 @@ export function serializeJob(j: FileJob) {
     createdAt: j.createdAt.toISOString(),
   };
 }
+
 

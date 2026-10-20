@@ -21,7 +21,7 @@ export default function Page() {
     { name: "OCR — rasmdan matn ajratish", level: s.ocr.connected ? "limited" : "not_connected", note: s.ocr.message },
     { name: "Audio/video transkripsiyasi", level: "not_connected", note: s.transcription.message },
     { name: "Rasmdagi yozuvni almashtirish", level: "not_connected", note: "Amalga oshirilmagan." },
-    { name: "Fayl saqlash", level: "works", note: s.storage.driver === "s3" ? "S3 bilan mos yopiq saqlash." : "Server diskidagi yopiq papka." },
+    { name: "Fayl saqlash", level: "works", note: s.storage.driver === "s3" ? "S3 bilan mos yopiq saqlash." : s.storage.driver === "db" ? "Fayllar bazada (PostgreSQL) saqlanadi." : "Server diskidagi yopiq papka." },
   ];
   const row = (f: { name: string; level: FeatureLevel; note: string }) => (
     <tr key={f.name} className="border-t border-line align-top">

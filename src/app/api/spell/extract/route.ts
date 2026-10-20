@@ -6,17 +6,17 @@ import { clientIp, handle, HttpError, json } from "@/lib/server/http";
 import { enforceRateLimit } from "@/lib/server/rate-limit";
 import { assertSameOrigin } from "@/lib/server/http";
 
-const MAX = 5 * 1024 * 1024;
+const MAX = Math.min(5, Number(process.env.FILE_MAX_MB ?? 5)) * 1024 * 1024;
 
 /** Fayldan matn olish (imlo tekshiruvi uchun). Fayl saqlanmaydi. */
 export const POST = handle(async (req: Request) => {
   assertSameOrigin(req);
   await enforceRateLimit(`extract:${clientIp(req)}`, 30, 600);
-  if (Number(req.headers.get("content-length") ?? 0) > MAX + 64 * 1024) throw new HttpError(413, "Fayl juda katta (5 MB gacha).");
+  if (Number(req.headers.get("content-length") ?? 0) > MAX + 64 * 1024) throw new HttpError(413, `Fayl juda katta (${MAX / 1024 / 1024} MB gacha).`);
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) throw new HttpError(400, "Fayl yuborilmadi.");
-  if (file.size > MAX) throw new HttpError(413, "Fayl juda katta (5 MB gacha).");
+  if (file.size > MAX) throw new HttpError(413, `Fayl juda katta (${MAX / 1024 / 1024} MB gacha).`);
   const buf = Buffer.from(await file.arrayBuffer());
   let format;
   try {

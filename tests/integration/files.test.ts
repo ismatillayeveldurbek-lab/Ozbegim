@@ -5,6 +5,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanupExpired, drainQueue } from "@/lib/server/file-jobs";
 import { Client, prisma } from "./helpers";
 
+/** Saqlangan obyekt mavjudmi: disk (local) yoki baza (db) rejimida. */
+async function objectExists(key: string) {
+  const st = await new Client().json("/api/status");
+  if (st.body.storage.driver === "db") return !!(await prisma.storedBlob.findUnique({ where: { key } }));
+  return existsSync(objPath(key));
+}
 const objPath = (key: string) => path.resolve(process.env.STORAGE_LOCAL_DIR || "./.data/storage", key);
 
 async function upload(c: Client, name: string, data: Buffer | string, options: object = { direction: "lat2cyr" }) {
@@ -59,6 +65,35 @@ describe("fayl vazifalari", () => {
     expect(s.getCell("A3").value).toEqual({ formula: "A2*2", result: 7 });
   });
 
+  it("matnli PDF: matn ajratiladi va tekshirish uchun qaytariladi (pdf.js ishchi fayli bilan)", async () => {
+    const { PDFDocument, StandardFonts } = await import("pdf-lib");
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    doc.addPage([400, 200]).drawText("Shahar markazida kutubxona ochildi.", { x: 20, y: 150, size: 14, font });
+    const r = await upload(a, "hujjat.pdf", Buffer.from(await doc.save()));
+    expect(r.status).toBe(201);
+    const job = await settle(r.body.id);
+    expect(job?.status).toBe("NEEDS_REVIEW");
+    const detail = await a.json(`/api/files/${r.body.id}`);
+    expect(detail.body.review.text).toContain("Шаҳар марказида");
+  });
+
+  it("parallel yuklash va bir vaqtda navbatni tortish — vazifa fayli yozilmasdan olinmaydi (race regressiyasi)", async () => {
+    let stop = false;
+    const puller = (async () => {
+      while (!stop) {
+        await drainQueue(5);
+        await new Promise((r) => setTimeout(r, 5));
+      }
+    })();
+    const uploads = await Promise.all(Array.from({ length: 8 }, (_, i) => upload(a, `parallel-${i}.txt`, `Shahar ${i}`)));
+    expect(uploads.map((u) => u.status)).toEqual(Array(8).fill(201));
+    const jobs = await Promise.all(uploads.map((u) => settle(u.body.id)));
+    stop = true;
+    await puller;
+    expect(jobs.map((j) => j?.status)).toEqual(Array(8).fill("DONE"));
+  });
+
   it("boshqa foydalanuvchi faylni ko‘ra, yuklab ola, o‘chira olmaydi", async () => {
     const r = await upload(a, "maxfiy.txt", "Maxfiy matn");
     await settle(r.body.id);
@@ -78,7 +113,8 @@ describe("fayl vazifalari", () => {
     expect(legacy.body.error).toContain(".docx");
     expect((await upload(a, "soxta.pdf", "bu pdf emas")).status).toBe(415);
     expect((await upload(a, "audio.mp3", "ID3")).body.error).toContain("transkripsiya");
-    const big = await upload(a, "katta.txt", Buffer.alloc(21 * 1024 * 1024, 0x61));
+    const maxMb = (await new Client().json("/api/status")).body.maxFileMb;
+    const big = await upload(a, "katta.txt", Buffer.alloc((maxMb + 1) * 1024 * 1024, 0x61));
     expect(big.status).toBe(413);
   });
 
@@ -106,11 +142,11 @@ describe("fayl vazifalari", () => {
     const r = await upload(a, "ochir.txt", "Salom dunyo");
     await settle(r.body.id);
     const job = await prisma.fileJob.findUniqueOrThrow({ where: { id: r.body.id } });
-    expect(existsSync(objPath(job.inputKey))).toBe(true);
-    expect(existsSync(objPath(job.outputKey!))).toBe(true);
+    expect(await objectExists(job.inputKey)).toBe(true);
+    expect(await objectExists(job.outputKey!)).toBe(true);
     expect((await a.json(`/api/files/${job.id}`, { method: "DELETE" })).status).toBe(200);
-    expect(existsSync(objPath(job.inputKey))).toBe(false);
-    expect(existsSync(objPath(job.outputKey!))).toBe(false);
+    expect(await objectExists(job.inputKey)).toBe(false);
+    expect(await objectExists(job.outputKey!)).toBe(false);
     expect(await prisma.fileJob.findUnique({ where: { id: job.id } })).toBeNull();
   });
 
@@ -125,7 +161,7 @@ describe("fayl vazifalari", () => {
     const r = await cleanupExpired();
     expect(r.jobs).toBeGreaterThanOrEqual(1);
     expect(await prisma.fileJob.findUnique({ where: { id: old.body.id } })).toBeNull();
-    expect(existsSync(objPath(oldJob.inputKey))).toBe(false);
+    expect(await objectExists(oldJob.inputKey)).toBe(false);
     expect(await prisma.fileJob.findUnique({ where: { id: fresh.body.id } })).not.toBeNull();
   });
 

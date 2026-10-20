@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/server/db";
 import { handle, HttpError, requireUser } from "@/lib/server/http";
-import { storage } from "@/lib/server/storage";
+import { ObjectMissingError, storage } from "@/lib/server/storage";
 
 /** Yuklab olish faqat egasiga; havola ommaviy emas va keshlanmaydi. */
 export const GET = handle(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
@@ -8,7 +8,12 @@ export const GET = handle(async (req: Request, { params }: { params: Promise<{ i
   const { id } = await params;
   const job = await prisma.fileJob.findUnique({ where: { id } });
   if (!job || job.userId !== user.id || !job.outputKey || job.expiresAt <= new Date()) throw new HttpError(404, "Fayl topilmadi.");
-  const data = await storage().get(job.outputKey);
+  const data = await storage()
+    .get(job.outputKey)
+    .catch((e) => {
+      if (e instanceof ObjectMissingError) throw new HttpError(410, "Natija fayli serverda topilmadi (muddati o‘tgan bo‘lishi mumkin). Faylni qayta yuklang.", "GONE");
+      throw e;
+    });
   const name = job.outputName ?? "natija";
   return new Response(new Uint8Array(data), {
     headers: {

@@ -75,6 +75,8 @@ export async function convertFile(format: FileFormat, name: string, buf: Buffer,
     case "pdf": {
       const r = await extractPdfText(buf).catch((e: Error & { code?: string }) => {
         if (e.code === "PDF_PAGES") throw new FileRejectError("PDF_PAGES", e.message);
+        // Fayl mazmuni emas, faqat xato turi loglanadi.
+        console.error("[pdf] o‘qib bo‘lmadi:", e?.name, e?.message?.slice(0, 120));
         throw new FileRejectError("CORRUPT", "PDF faylni o‘qib bo‘lmadi (buzilgan yoki parol bilan himoyalangan).");
       });
       if (r.scanned) {

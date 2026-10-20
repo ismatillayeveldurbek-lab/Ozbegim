@@ -9,7 +9,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // NEXT_OUTPUT=standalone — serverless-ga o‘xshash (faqat kuzatilgan fayllar) sinov uchun
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   agentRules: false,
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
+  },
   serverExternalPackages: ["pdfjs-dist", "exceljs", "@prisma/adapter-pg", "pg"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

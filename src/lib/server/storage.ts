@@ -34,7 +34,12 @@ class LocalDriver implements StorageDriver {
     await writeFile(p, data, { mode: 0o600 });
   }
   async get(key: string) {
-    return readFile(this.resolve(key));
+    try {
+      return await readFile(this.resolve(key));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") throw new ObjectMissingError(key);
+      throw e;
+    }
   }
   async delete(key: string) {
     await rm(this.resolve(key), { force: true });
@@ -68,9 +73,44 @@ class S3Driver implements StorageDriver {
   }
 }
 
+/**
+ * Fayl mazmuni PostgreSQL’da (bytea). Doimiy diski bo‘lmagan serverless muhitlar uchun:
+ * fayllar kichik (FILE_MAX_MB) va qisqa muddatli bo‘lgani uchun alohida xizmat shart emas.
+ */
+class DbDriver implements StorageDriver {
+  name = "db";
+  private async db() {
+    return (await import("./db")).prisma;
+  }
+  async put(key: string, data: Buffer) {
+    const prisma = await this.db();
+    await prisma.storedBlob.upsert({ where: { key: safeKey(key) }, create: { key, data: new Uint8Array(data) }, update: { data: new Uint8Array(data) } });
+  }
+  async get(key: string) {
+    const prisma = await this.db();
+    const row = await prisma.storedBlob.findUnique({ where: { key: safeKey(key) } });
+    if (!row) throw new ObjectMissingError(key);
+    return Buffer.from(row.data);
+  }
+  async delete(key: string) {
+    const prisma = await this.db();
+    await prisma.storedBlob.deleteMany({ where: { key: safeKey(key) } });
+  }
+}
+
+/** Saqlangan obyekt topilmadi (muddati o‘tgan yoki o‘chirilgan). */
+export class ObjectMissingError extends Error {
+  constructor(key: string) {
+    super(`Saqlangan obyekt topilmadi: ${key}`);
+  }
+}
+
 let driver: StorageDriver | null = null;
 export function storage(): StorageDriver {
-  if (!driver) driver = process.env.STORAGE_DRIVER === "s3" ? new S3Driver() : new LocalDriver();
+  if (!driver) {
+    const d = process.env.STORAGE_DRIVER;
+    driver = d === "s3" ? new S3Driver() : d === "db" ? new DbDriver() : new LocalDriver();
+  }
   return driver;
 }
 

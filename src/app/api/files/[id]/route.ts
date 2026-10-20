@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/server/db";
 import { deleteJob, serializeJob } from "@/lib/server/file-jobs";
 import { handle, HttpError, json, requireUser } from "@/lib/server/http";
-import { storage } from "@/lib/server/storage";
+import { ObjectMissingError, storage } from "@/lib/server/storage";
 
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -18,7 +18,14 @@ async function ownJob(req: Request, ctx: Ctx) {
 export const GET = handle(async (req: Request, ctx: Ctx) => {
   const { job } = await ownJob(req, ctx);
   let review = null;
-  if (job.textKey) review = JSON.parse((await storage().get(job.textKey)).toString("utf8"));
+  if (job.textKey) {
+    try {
+      review = JSON.parse((await storage().get(job.textKey)).toString("utf8"));
+    } catch (e) {
+      if (!(e instanceof ObjectMissingError)) throw e;
+      throw new HttpError(410, "Ajratilgan matn serverda topilmadi (muddati o‘tgan bo‘lishi mumkin). Faylni qayta yuklang.", "GONE");
+    }
+  }
   return json({ ...serializeJob(job), review });
 });
 
