@@ -11,6 +11,11 @@ describe("imlo tekshiruvi", () => {
       ["malumot", "ma’lumot", "tutuq"],
     ]);
   });
+  it("olmoshlarning qaratqich kelishigidagi xatolar", () => {
+    expect(types("Salom menang ismim Ahror")).toEqual([["menang", "mening", "imlo"]]);
+    expect(types("Senig kitobing")).toEqual([["Senig", "Sening", "imlo"]]);
+  });
+
   it("apostrof uslubi va noto‘g‘ri belgilar", () => {
     const r = checkSpelling("O‘zbek tili. O`g`il bola.");
     expect(r.map((s) => [s.original, s.replacement, s.confidence])).toEqual([
