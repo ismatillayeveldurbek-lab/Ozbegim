@@ -38,7 +38,7 @@ export function normalizeTranslation(raw: unknown): TranslationResult {
   // 8-qoida: model JSON o‘rniga faqat xabarni qaytargan bo‘lishi ham mumkin.
   if (typeof raw === "string" && raw.includes("tushunib bo'lmadi")) return { source_language: "", translation: NOT_UNDERSTOOD, understood: false };
   const p = schema.safeParse(raw);
-  if (!p.success) throw new HttpError(502, "AI javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
+  if (!p.success) throw new HttpError(502, "Xizmat javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
   const t = p.data.translation.trim();
   const understood = !!t && !t.includes("tushunib bo'lmadi") && !t.includes("tushunib bo‘lmadi");
   return { source_language: p.data.source_language, translation: understood ? t : NOT_UNDERSTOOD, understood };

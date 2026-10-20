@@ -27,11 +27,11 @@ Xato bo‘lmasa, bo‘sh ro‘yxat qaytaring.`;
 
 export const POST = handle(async (req: Request) => {
   const user = await requireUser(req);
-  const body = await readJson(req, z.object({ text: z.string().min(1).max(8000, "AI tekshiruvi uchun matn 8000 belgidan oshmasin."), consent: z.literal(true) }));
+  const body = await readJson(req, z.object({ text: z.string().min(1).max(8000, "Qo‘shimcha tekshiruv uchun matn 8000 belgidan oshmasin."), consent: z.literal(true) }));
   if (!body.consent) throw new HttpError(400, "Matnni tashqi xizmatga yuborishga rozilik berilmagan.");
   await enforceRateLimit(`ai:${user.id}`, 20, 3600);
   const r = await aiJson<{ suggestions: Array<{ original: string; replacement: string; explanation: string }> }>(SYSTEM, body.text, SCHEMA);
   // Matnda uchramaydigan "tavsiyalar" tashlab yuboriladi.
   const suggestions = r.suggestions.filter((s) => s.original && s.original !== s.replacement && body.text.includes(s.original)).slice(0, 100);
-  return json({ suggestions, label: "AI taxmini" });
+  return json({ suggestions, label: "Taxmin" });
 });

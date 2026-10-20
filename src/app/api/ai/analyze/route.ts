@@ -35,5 +35,5 @@ export const POST = handle(async (req: Request) => {
   const body = await readJson(req, z.object({ sentence: z.string().trim().min(2).max(500), consent: z.literal(true) }));
   await enforceRateLimit(`ai:${user.id}`, 20, 3600);
   const r = await aiJson<{ parts: unknown[]; note: string }>(SYSTEM, body.sentence, SCHEMA);
-  return json({ ...r, label: "AI taxmini" });
+  return json({ ...r, label: "Taxmin" });
 });

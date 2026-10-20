@@ -1,5 +1,5 @@
 "use client";
-import { Microscope, Sparkles } from "lucide-react";
+import { Lightbulb, Microscope } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Notice, Spinner } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
@@ -235,12 +235,12 @@ function AiSentence({ sentence }: { sentence: string }) {
   return (
     <section className="glass p-5">
       <h3 className="flex items-center gap-2 font-bold">
-        <Sparkles className="h-5 w-5 text-info" aria-hidden /> AI taxmini
+        <Lightbulb className="h-5 w-5 text-info" aria-hidden /> Kengaytirilgan tahlil
       </h3>
       {!status.ai.connected ? (
         <p className="mt-1 text-sm text-ink-soft">Xizmat ulanmagan. Yuqoridagi natijalar faqat qoidaviy tahlil va lug‘at ma’lumotiga asoslangan.</p>
       ) : !session ? (
-        <p className="mt-1 text-sm text-ink-soft">AI tahlili uchun tizimga kiring.</p>
+        <p className="mt-1 text-sm text-ink-soft">Kengaytirilgan tahlil uchun tizimga kiring.</p>
       ) : (
         <>
           <p className="mt-1 text-sm text-ink-soft">Gapingiz {status.ai.provider} xizmatiga yuboriladi. Natija taxmin sifatida alohida ko‘rsatiladi.</p>
@@ -262,13 +262,13 @@ function AiSentence({ sentence }: { sentence: string }) {
               }
             }}
           >
-            {busy ? "Kutilmoqda…" : "AI taxminini olish"}
+            {busy ? "Kutilmoqda…" : "Kengaytirilgan tahlilni olish"}
           </button>
           {res && (
             <ul className="mt-3 flex flex-col gap-2">
               {res.parts.map((p, i) => (
                 <li key={i} className="rounded-xl border border-line p-3">
-                  <span className="chip bg-info-soft text-info">AI taxmini</span> <strong>{p.words}</strong> — {p.role} ({p.question})
+                  <span className="chip bg-info-soft text-info">Taxmin</span> <strong>{p.words}</strong> — {p.role} ({p.question})
                   <p className="text-sm text-ink-soft">{p.explanation}</p>
                 </li>
               ))}

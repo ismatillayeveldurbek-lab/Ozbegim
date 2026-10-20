@@ -48,7 +48,7 @@ export function normalizeWordAnalysis(raw: unknown): WordAnalysis {
     return { found: false, xato: "So‘z topilmadi. Yozilishini tekshirib, qayta urinib ko‘ring." };
   }
   const p = okSchema.safeParse(raw);
-  if (!p.success) throw new HttpError(502, "AI javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
+  if (!p.success) throw new HttpError(502, "Xizmat javobi kutilgan ko‘rinishda emas. Qayta urinib ko‘ring.", "AI_BAD_SHAPE");
   const misol = p.data.misol;
   const misollar = (Array.isArray(misol) ? misol : misol ? [misol] : []).map((m) => m.trim()).filter(Boolean).slice(0, 2);
   return {

@@ -6,8 +6,8 @@ export function servicesStatus() {
   return {
     ocr,
     ai: process.env.ANTHROPIC_API_KEY
-      ? { connected: true, provider: "Anthropic Claude API", model: process.env.AI_MODEL || "claude-opus-5-5", message: "AI tavsiyalari ulangan." }
-      : { connected: false, provider: null, model: null, message: "AI xizmati ulanmagan (ANTHROPIC_API_KEY sozlanmagan)." },
+      ? { connected: true, provider: "tashqi tahlil", model: null, message: "Qo‘shimcha tavsiyalar ulangan." }
+      : { connected: false, provider: null, model: null, message: "Xizmat ulanmagan." },
     transcription: { connected: false, message: "Transkripsiya xizmati ulanmagan." },
     storage: { driver: process.env.STORAGE_DRIVER === "s3" ? "s3" : process.env.STORAGE_DRIVER === "db" ? "db" : "local" },
     fileProcessing: process.env.FILE_PROCESSING === "inline" ? "inline" : "worker",

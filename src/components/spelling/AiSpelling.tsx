@@ -1,5 +1,5 @@
 "use client";
-import { Sparkles } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Notice } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
@@ -12,7 +12,7 @@ interface AiSugg {
   explanation: string;
 }
 
-/** AI tavsiyalari — qoidaviy tekshiruvdan alohida, aniq belgilangan. */
+/** Qo‘shimcha tavsiyalar (tashqi xizmat) — qoidaviy tekshiruvdan alohida, aniq belgilangan. */
 export function AiSpelling({ text, onApply }: { text: string; onApply: (next: string) => void }) {
   const { data: session } = authClient.useSession();
   const toast = useToast();
@@ -29,16 +29,16 @@ export function AiSpelling({ text, onApply }: { text: string; onApply: (next: st
   return (
     <section className="glass p-4" aria-labelledby="ai-title">
       <h3 id="ai-title" className="flex items-center gap-2 font-bold">
-        <Sparkles className="h-5 w-5 text-info" aria-hidden /> AI tavsiyalari
+        <Lightbulb className="h-5 w-5 text-info" aria-hidden /> Qo‘shimcha tavsiyalar
       </h3>
       {!status.ai.connected ? (
         <p className="mt-1 text-sm text-ink-soft">Xizmat ulanmagan. Yuqoridagi tavsiyalar faqat qoidaviy tekshiruv natijasi.</p>
       ) : !session ? (
-        <p className="mt-1 text-sm text-ink-soft">AI tavsiyalaridan foydalanish uchun tizimga kiring.</p>
+        <p className="mt-1 text-sm text-ink-soft">Qo‘shimcha tavsiyalardan foydalanish uchun tizimga kiring.</p>
       ) : (
         <>
           <p className="mt-1 text-sm text-ink-soft">
-            Bu tugma matningizni (8000 belgigacha) <strong>{status.ai.provider}</strong> xizmatiga yuboradi. AI tavsiyalari taxmin bo‘lib, xato bo‘lishi mumkin.
+            Bu tugma matningizni (8000 belgigacha) <strong>{status.ai.provider}</strong> xizmatiga yuboradi. Tavsiyalar taxminiy bo‘lib, xato bo‘lishi mumkin.
           </p>
           <label className="mt-2 flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-0.5 h-5 w-5 accent-[var(--accent)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
@@ -59,14 +59,14 @@ export function AiSpelling({ text, onApply }: { text: string; onApply: (next: st
               }
             }}
           >
-            {busy ? "Kutilmoqda…" : "AI tavsiyalarini olish"}
+            {busy ? "Kutilmoqda…" : "Qo‘shimcha tavsiyalarni olish"}
           </button>
-          {items && items.length === 0 && <Notice kind="success" className="mt-2">AI qo‘shimcha xato topmadi.</Notice>}
+          {items && items.length === 0 && <Notice kind="success" className="mt-2">Qo‘shimcha xato topilmadi.</Notice>}
           {items && items.length > 0 && (
             <ul className="mt-3 flex flex-col gap-2">
               {items.map((s, i) => (
                 <li key={i} className="rounded-xl border border-line p-3">
-                  <span className="chip bg-info-soft text-info">AI taxmini</span>
+                  <span className="chip bg-info-soft text-info">Taxmin</span>
                   <p className="mt-1">
                     <del className="text-danger">{s.original}</del> → <strong className="text-accent">{s.replacement}</strong>
                   </p>

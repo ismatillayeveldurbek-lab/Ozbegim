@@ -20,7 +20,7 @@ export const AI_MODEL = () => process.env.AI_MODEL || "claude-opus-5-5";
  *   ko‘rsatma bo‘yicha JSON deb kutiladi va xavfsiz parse qilinadi.
  */
 export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number } = {}): Promise<T> {
-  if (!aiConnected()) throw new HttpError(503, "AI xizmati ulanmagan.", "AI_NOT_CONNECTED");
+  if (!aiConnected()) throw new HttpError(503, "Xizmat ulanmagan.", "AI_NOT_CONNECTED");
   client ??= new Anthropic();
   let response;
   try {
@@ -35,15 +35,15 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
       messages: [{ role: "user", content: user }],
     });
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) throw new HttpError(429, "AI xizmati hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
-    if (e instanceof Anthropic.AuthenticationError) throw new HttpError(503, "AI xizmati noto‘g‘ri sozlangan (kalit).", "AI_AUTH");
-    if (e instanceof Anthropic.APIError) throw new HttpError(502, "AI xizmatidan javob olinmadi.", "AI_ERROR");
-    throw new HttpError(502, "AI xizmatiga ulanib bo‘lmadi.", "AI_ERROR");
+    if (e instanceof Anthropic.RateLimitError) throw new HttpError(429, "Xizmat hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
+    if (e instanceof Anthropic.AuthenticationError) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
+    if (e instanceof Anthropic.APIError) throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
+    throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
   }
-  if (response.stop_reason === "refusal") throw new HttpError(422, "AI xizmati bu so‘rovni bajarishdan bosh tortdi.", "AI_REFUSAL");
-  if (response.stop_reason === "max_tokens") throw new HttpError(422, "Matn juda uzun — AI javobi to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
+  if (response.stop_reason === "refusal") throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");
+  if (response.stop_reason === "max_tokens") throw new HttpError(422, "Matn juda uzun — javob to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
   const text = response.content.map((b) => (b.type === "text" ? b.text : "")).join("");
   const parsed = parseAiJson(text);
-  if (parsed === null || typeof parsed !== "object") throw new HttpError(502, "AI javobini o‘qib bo‘lmadi. Qayta urinib ko‘ring.", "AI_BAD_JSON");
+  if (parsed === null || typeof parsed !== "object") throw new HttpError(502, "Javobni o‘qib bo‘lmadi. Qayta urinib ko‘ring.", "AI_BAD_JSON");
   return parsed as T;
 }

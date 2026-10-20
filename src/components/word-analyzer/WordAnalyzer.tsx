@@ -57,13 +57,13 @@ export function WordAnalyzer() {
           </button>
         </div>
         <p id="word-analyzer-note" className="text-sm text-ink-muted">
-          So‘z tahlil uchun AI xizmatiga (Anthropic Claude) yuboriladi. Natija AI taxmini bo‘lib, tasdiqlangan lug‘at ma’lumoti emas.
+          So‘z tahlil uchun tashqi xizmatga yuboriladi. Natija taxminiy bo‘lib, tasdiqlangan lug‘at ma’lumoti emas.
         </p>
       </form>
 
       <div aria-live="polite">
         {busy && <Spinner label="Tahlil qilinmoqda..." />}
-        {!busy && error && <Notice kind={error.includes("ulanmagan") ? "warn" : "danger"}>{error.includes("ulanmagan") ? "AI xizmati ulanmagan — so‘z tahlilchisi hozircha ishlamaydi." : error}</Notice>}
+        {!busy && error && <Notice kind={error.includes("ulanmagan") ? "warn" : "danger"}>{error.includes("ulanmagan") ? "Xizmat ulanmagan — so‘z tahlilchisi hozircha ishlamaydi." : error}</Notice>}
         {!busy && r && !r.found && (
           <Notice kind="warn" title="So‘z topilmadi">
             “{data!.word}” so‘zi bo‘yicha ma’lumot topilmadi. Yozilishini tekshirib, qayta urinib ko‘ring.
@@ -77,7 +77,7 @@ export function WordAnalyzer() {
             <h3 id="word-analyzer-title" className="text-2xl font-bold">
               {data!.word}
             </h3>
-            <span className="chip bg-info-soft text-info">AI taxmini</span>
+            <span className="chip bg-info-soft text-info">Taxmin</span>
           </div>
           <div className="word-analyzer-grid">
             <article className="glass word-analyzer-block word-analyzer-block-wide p-5">

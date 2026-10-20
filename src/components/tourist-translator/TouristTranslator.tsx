@@ -69,7 +69,7 @@ export function TouristTranslator() {
             </button>
           </div>
           <p id="tourist-translator-note" className="text-sm text-ink-muted">
-            Matn tarjima uchun AI xizmatiga (Anthropic Claude) yuboriladi va saytda saqlanmaydi. Shaxsiy ma’lumotlarni (pasport raqami, karta ma’lumotlari) kiritmang.
+            Matn tarjima uchun tashqi xizmatga yuboriladi va saytda saqlanmaydi. Shaxsiy ma’lumotlarni (pasport raqami, karta ma’lumotlari) kiritmang.
           </p>
         </form>
 
@@ -81,7 +81,7 @@ export function TouristTranslator() {
             {result?.understood && result.source_language && <span className="tourist-translator-lang">Asl til: {result.source_language}</span>}
           </div>
           {busy && <Spinner label="Tarjima qilinmoqda..." />}
-          {!busy && error && <Notice kind={error.includes("ulanmagan") ? "warn" : "danger"}>{error.includes("ulanmagan") ? "AI xizmati ulanmagan — tarjimon hozircha ishlamaydi." : error}</Notice>}
+          {!busy && error && <Notice kind={error.includes("ulanmagan") ? "warn" : "danger"}>{error.includes("ulanmagan") ? "Xizmat ulanmagan — tarjimon hozircha ishlamaydi." : error}</Notice>}
           {!busy && result && !result.understood && <Notice kind="warn">{result.translation}</Notice>}
           {!busy && result?.understood && (
             <>
@@ -100,7 +100,7 @@ export function TouristTranslator() {
       </div>
       <Notice kind="info" title="Tarjima qoidalari">
         Tarjima zamonaviy adabiy o‘zbek tilida, lotin yozuvida va “Siz” shaklida beriladi. Ismlar, brendlar, mehmonxona nomlari va manzillar tarjima qilinmaydi; raqamlar,
-        narxlar, sanalar, telefon va email o‘zgarmaydi; mashhur joy nomlari o‘zbekcha shaklda yoziladi (Samarqand, Buxoro, Xiva, Registon). AI tarjimasida xato bo‘lishi mumkin.
+        narxlar, sanalar, telefon va email o‘zgarmaydi; mashhur joy nomlari o‘zbekcha shaklda yoziladi (Samarqand, Buxoro, Xiva, Registon). Avtomatik tarjimada xato bo‘lishi mumkin.
       </Notice>
     </div>
   );
