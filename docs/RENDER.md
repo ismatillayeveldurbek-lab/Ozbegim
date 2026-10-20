@@ -21,6 +21,7 @@ Migratsiyalar konteyner ishga tushganda bajariladi (`scripts/start-prod.sh`).
    `BETTER_AUTH_SECRET` avtomatik generatsiya qilinadi, `DATABASE_URL` bazadan ulanadi.
 3. `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` so‘ralsa — ixtiyoriy (AI bo‘limlari uchun), bo‘sh qoldirish mumkin.
    Bepul kalit: https://aistudio.google.com → **Get API key** → `GEMINI_API_KEY` ga yozing.
+   Zaxira (bepul): https://console.groq.com → **API Keys** → `LLM_API_KEY`. Gemini limiti tugasa avtomatik Groq ishlatiladi.
 4. **Apply** → birinchi build ~10 daqiqa davom etadi.
 
 Sayt manzili: `https://ozbegim-xxxx.onrender.com`. `BETTER_AUTH_URL` berilmagan bo‘lsa shu manzil
