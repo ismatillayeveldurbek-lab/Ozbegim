@@ -105,7 +105,11 @@ async function geminiText(system: string, user: string, schema: Record<string, u
   } catch {
     throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
   }
-  if (res.status === 429) throw new HttpError(429, "Xizmat hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
+  if (res.status === 429) {
+    // Bepul tarif limiti: qaysi kvota (daqiqalik yoki kunlik) tugagani logda ko‘rinadi
+    console.error(`Gemini limiti (429): ${(await res.text().catch(() => "")).slice(0, 400)}`);
+    throw new HttpError(429, "Xizmat hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
+  }
   if (res.status === 401 || res.status === 403) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
