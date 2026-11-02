@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EmptyState, Notice, Spinner } from "@/components/ui/primitives";
 import { api } from "@/lib/fetcher";
+import { IdiomAiFallback } from "./IdiomAiFallback";
 import { IdiomCard } from "./IdiomCard";
 import { SearchForm } from "./SearchForm";
 import type { IdiomDTO } from "./types";
@@ -47,10 +48,7 @@ export function IdiomSearch() {
               ))}
             </div>
           ) : (
-            <Notice kind="warn" title="Bunday ibora topilmadi">
-              “{q}” iborasi bazada yo‘q. Ibora ma’nosi uni tashkil etgan so‘zlarning oddiy ma’nolaridan farq qiladi, shuning uchun taxminiy izoh
-              berilmaydi.
-            </Notice>
+            <IdiomAiFallback phrase={q.trim()} />
           )}
           {data.near.length > 0 && (
             <section aria-labelledby="near-title">

@@ -22,7 +22,7 @@ const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 45_000);
 type Effort = "low" | "medium" | "high";
 type Usage = { model: string; input: number; output: number };
 type Reply = { text: string; usage: Usage };
-export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate" | "check"; userId?: string | null };
+export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate" | "idiom" | "check"; userId?: string | null };
 
 /** Narx, USD / 1 mln token [kirish, chiqish]. Taxminiy — aniq hisob Claude Console’da. Env bilan o‘zgartiriladi. */
 function priceFor(model: string): [number, number] {
