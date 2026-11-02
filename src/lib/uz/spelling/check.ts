@@ -34,7 +34,7 @@ export interface Suggestion {
   type: SuggestionType;
   message: string;
   confidence: "aniq" | "ehtimoliy";
-  source: "qoida" | "lug‘at";
+  source: "qoida" | "lug‘at" | "tahlil";
   /** Rad etilgan tavsiyalarni matn o‘zgargandan keyin ham tanish uchun imzo */
   signature: string;
 }

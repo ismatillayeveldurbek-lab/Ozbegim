@@ -81,11 +81,11 @@ describe("tashqi xizmatlar ulanmaganda natija to‘qilmaydi", () => {
   it("AI endpointlari 503 qaytaradi; holat sahifasi “ulanmagan” deydi", async () => {
     const u = new Client();
     await u.signUp();
-    const r = await u.json("/api/ai/spelling", { method: "POST", json: { text: "kop malumot", consent: true } });
+    const r = await u.json("/api/ai/spelling", { method: "POST", json: { text: "kop malumot" } });
     expect(r.status).toBe(503);
     expect(r.body.error).toContain("ulanmagan");
     expect((await u.json("/api/ai/analyze", { method: "POST", json: { sentence: "Men keldim" } })).status).toBe(503);
-    expect((await u.json("/api/ai/spelling", { method: "POST", json: { text: "x", consent: false } })).status).toBe(400);
+    expect((await u.json("/api/ai/spelling", { method: "POST", json: { text: "" } })).status).toBe(400);
     const st = await new Client().json("/api/status");
     expect(st.body.ai.connected).toBe(false);
     // OCR holati sozlamaga mos: OCR_PROVIDER berilmagan bo‘lsa — ulanmagan

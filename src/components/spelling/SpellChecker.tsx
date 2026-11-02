@@ -9,7 +9,6 @@ import { api } from "@/lib/fetcher";
 import { downloadText } from "@/lib/text-count";
 import { normalizeKey } from "@/lib/uz/normalize";
 import { applyAll, applySuggestion, checkSpelling, type Suggestion, TYPE_LABEL } from "@/lib/uz/spelling/check";
-import { AiSpelling } from "./AiSpelling";
 
 interface Resources {
   pairs: Array<{ wrongKey: string; correct: string; note: string | null }>;
@@ -17,6 +16,23 @@ interface Resources {
 }
 
 const WORD_TYPES = new Set(["imlo", "o_g_belgisi", "tutuq", "qoshib_yozish", "ajratib_yozish"]);
+
+type AiItem = { original: string; replacement: string; explanation: string };
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Chuqur tekshiruv tavsiyalari joriy matndagi o‘rinlarga bog‘lanadi (faqat butun so‘z sifatida uchragan joylar). */
+function placeAiItems(text: string, items: AiItem[]): Suggestion[] {
+  const out: Suggestion[] = [];
+  for (const it of items) {
+    const re = new RegExp(`(?<![\\p{L}'‘’ʻʼ\`])${escapeRe(it.original)}(?![\\p{L}])`, "gu");
+    for (const m of text.matchAll(re)) {
+      const type: Suggestion["type"] = /\s/.test(it.original) && it.replacement.includes("-") ? "chiziqcha" : /\s/.test(it.original) && !/\s/.test(it.replacement) ? "qoshib_yozish" : "imlo";
+      const signature = `tahlil|${it.original}|${it.replacement}`;
+      out.push({ id: `ai-${m.index}-${signature}`, start: m.index!, end: m.index! + it.original.length, original: it.original, replacement: it.replacement, type, message: it.explanation, confidence: "aniq", source: "tahlil", signature });
+    }
+  }
+  return out;
+}
 
 export function SpellChecker() {
   const toast = useToast();
@@ -31,6 +47,12 @@ export function SpellChecker() {
   const [compare, setCompare] = useState(false);
   const [debounced, setDebounced] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  // Chuqur tekshiruv: yozish to‘xtagach matn tashqi xizmatga yuboriladi; tavsiya qabul/rad qilinganda qayta so‘ralmaydi
+  const [aiItems, setAiItems] = useState<AiItem[]>([]);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const aiSent = useRef("");
+  const skipAi = useRef(false);
 
   useEffect(() => {
     api<Resources>("/api/spell/resources").then(setResources).catch(() => {});
@@ -41,12 +63,34 @@ export function SpellChecker() {
     return () => clearTimeout(t);
   }, [text]);
 
+  useEffect(() => {
+    if (skipAi.current) {
+      skipAi.current = false;
+      aiSent.current = text;
+      return;
+    }
+    const t = text.trim();
+    if (t.length < 10 || text === aiSent.current) return;
+    const timer = setTimeout(() => {
+      aiSent.current = text;
+      setAiBusy(true);
+      setAiError(null);
+      api<{ suggestions: AiItem[] }>("/api/ai/spelling", { method: "POST", json: { text: text.slice(0, 8000) } })
+        .then((r) => setAiItems(r.suggestions))
+        .catch((e) => setAiError((e as { status?: number }).status === 503 ? null : (e as Error).message))
+        .finally(() => setAiBusy(false));
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [text]);
+
   const ignore = useMemo(() => new Set(resources.ignore), [resources.ignore]);
   // Matn o‘zgarganda tavsiyalar qaytadan hisoblanadi (eski indekslar ishlatilmaydi).
-  const suggestions = useMemo(
-    () => checkSpelling(debounced, { punctuation, ignore, pairs: resources.pairs }).filter((s) => !rejected.has(s.signature)),
-    [debounced, punctuation, ignore, resources.pairs, rejected],
-  );
+  const suggestions = useMemo(() => {
+    const rules = checkSpelling(debounced, { punctuation, ignore, pairs: resources.pairs });
+    // Qoidaviy tavsiya bor joyga chuqur tekshiruv tavsiyasi qo‘shilmaydi
+    const ai = placeAiItems(debounced, aiItems).filter((a) => !ignore.has(normalizeKey(a.original)) && !rules.some((r) => a.start < Math.max(r.end, r.start + 1) && a.end > r.start));
+    return [...rules, ...ai].sort((a, b) => a.start - b.start).filter((s) => !rejected.has(s.signature));
+  }, [debounced, punctuation, ignore, resources.pairs, rejected, aiItems]);
   const stale = debounced !== text;
 
   function pushUndo() {
@@ -60,6 +104,7 @@ export function SpellChecker() {
       return;
     }
     pushUndo();
+    skipAi.current = true;
     setText(next);
     setDebounced(next);
   }
@@ -73,6 +118,7 @@ export function SpellChecker() {
     const r = applyAll(text, suggestions);
     if (!r.applied) return;
     pushUndo();
+    skipAi.current = true;
     setText(r.text);
     setDebounced(r.text);
     toast.success(`${r.applied} ta tavsiya qabul qilindi.`);
@@ -82,6 +128,7 @@ export function SpellChecker() {
     const last = undo[undo.length - 1];
     if (!last) return;
     setUndo(undo.slice(0, -1));
+    skipAi.current = true;
     setText(last.text);
     setDebounced(last.text);
     setRejected(last.rejected);
@@ -140,9 +187,9 @@ export function SpellChecker() {
   return (
     <div className="flex flex-col gap-4">
       <Notice kind="info" title="Tekshiruv qamrovi">
-        Tekshiruv brauzeringizda, qoidalar asosida bajariladi: o‘/g‘ va tutuq belgilari, ko‘p uchraydigan xato yozilishlar, katta harf, qo‘shib/ajratib/chiziqcha bilan
-        yozish, bo‘shliqlar va (yoqilsa) tinish belgilari. To‘liq o‘zbek tili lug‘ati ulanmagan, shuning uchun bazada bo‘lmagan so‘zlardagi xatolar aniqlanmasligi
-        mumkin. Ism-familiya va atamalar avtomatik xato hisoblanmaydi.
+        Noto‘g‘ri yozilgan so‘zlar, o‘/g‘ va tutuq belgilari, katta harf, qo‘shib/ajratib/chiziqcha bilan yozish, bo‘shliqlar va (yoqilsa) tinish belgilari
+        tekshiriladi. Ism-familiya va atamalar xato hisoblanmaydi. Yozishni to‘xtatganingizdan so‘ng matn chuqur tekshiruv uchun tashqi xizmatga yuboriladi
+        (8000 belgigacha) va saqlanmaydi.
       </Notice>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_22rem]">
@@ -260,8 +307,9 @@ export function SpellChecker() {
           <h3 id="sugg-title" className="text-lg font-bold">
             Tavsiyalar <span className="chip ml-1 text-ink-soft">{suggestions.length}</span>
           </h3>
-          {stale && <p className="text-sm text-ink-muted">Hisoblanmoqda…</p>}
-          {!suggestions.length && debounced && !stale && <Notice kind="success">Qoidaviy tekshiruv xato topmadi.</Notice>}
+          {(stale || aiBusy) && <p className="text-sm text-ink-muted">Tekshirilmoqda…</p>}
+          {aiError && <p className="text-sm text-danger">Chuqur tekshiruv bajarilmadi: {aiError}</p>}
+          {!suggestions.length && debounced && !stale && !aiBusy && <Notice kind="success">Xato topilmadi.</Notice>}
           <ol className="flex flex-col gap-2">
             {suggestions.map((s, i) => (
               <li
@@ -272,7 +320,9 @@ export function SpellChecker() {
                 <p className="flex flex-wrap items-center gap-1.5 text-sm">
                   <span className="font-bold text-warn">{i + 1}.</span>
                   <span className="chip text-ink-soft">{TYPE_LABEL[s.type]}</span>
-                  <span className={`chip ${s.confidence === "aniq" ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{s.confidence === "aniq" ? "Aniq qoida" : "Ehtimoliy"}</span>
+                  {s.source !== "tahlil" && (
+                    <span className={`chip ${s.confidence === "aniq" ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{s.confidence === "aniq" ? "Aniq qoida" : "Ehtimoliy"}</span>
+                  )}
                   {s.source === "lug‘at" && <span className="chip bg-info-soft text-info">Lug‘at</span>}
                 </p>
                 <p className="mt-2 break-words text-[1.02rem]">
@@ -299,7 +349,6 @@ export function SpellChecker() {
               </li>
             ))}
           </ol>
-          <AiSpelling text={text} onApply={(next) => (pushUndo(), setText(next), setDebounced(next))} />
         </aside>
       </div>
     </div>
