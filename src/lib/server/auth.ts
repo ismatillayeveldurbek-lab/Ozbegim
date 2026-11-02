@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { CLIENT_IP_HEADERS } from "./client-ip";
 import { prisma } from "./db";
 
 const intEnv = (name: string, fallback: number) => {
@@ -53,7 +54,9 @@ export const auth = betterAuth({
     useSecureCookies: process.env.NODE_ENV === "production" && process.env.BETTER_AUTH_URL?.startsWith("https"),
     defaultCookieAttributes: { httpOnly: true, sameSite: "lax" },
     // Kirish limiti har bir IP uchun alohida bo‘lishi kerak (aks holda butun sayt bitta umumiy limitga tushadi)
-    ipAddress: { ipAddressHeaders: process.env.TRUST_PROXY === "true" ? ["x-forwarded-for"] : ["x-real-ip"] },
+    // Better Auth faqat bitta qiymatli sarlavhaga ishonadi; Render X-Forwarded-For’ga bir nechta manzil yozadi,
+    // shuning uchun avval Cloudflare/Render qo‘yadigan bitta qiymatli sarlavhalar sinaladi.
+    ipAddress: { ipAddressHeaders: process.env.TRUST_PROXY === "true" ? [...CLIENT_IP_HEADERS] : ["x-real-ip"] },
   },
   plugins: [nextCookies()],
 });

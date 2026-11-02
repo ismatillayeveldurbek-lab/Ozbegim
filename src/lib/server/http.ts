@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser, isAdmin, isStaff, type CurrentUser } from "./session";
+import { CLIENT_IP_HEADERS } from "./client-ip";
 
 export class HttpError extends Error {
   constructor(
@@ -97,10 +98,19 @@ export async function readJson<T>(req: Request, schema: z.ZodType<T>, maxBytes =
   return schema.parse(body);
 }
 
+let ipHeadersLogged = false;
+
 export function clientIp(req: Request): string {
   if (process.env.TRUST_PROXY === "true") {
-    const fwd = req.headers.get("x-forwarded-for");
-    if (fwd) return fwd.split(",")[0].trim();
+    if (!ipHeadersLogged) {
+      // Bir marta: qaysi IP sarlavhalari kelayotgani (manzillarning o‘zi emas, faqat nomi va soni)
+      ipHeadersLogged = true;
+      console.log(`[ip] sarlavhalar: ${CLIENT_IP_HEADERS.map((h) => `${h}=${req.headers.get(h)?.split(",").length ?? 0}`).join(" ")}`);
+    }
+    for (const h of CLIENT_IP_HEADERS) {
+      const v = req.headers.get(h);
+      if (v) return v.split(",")[0].trim();
+    }
   }
   return req.headers.get("x-real-ip") ?? "local";
 }
