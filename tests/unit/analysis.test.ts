@@ -98,3 +98,14 @@ describe("matn statistikasi", () => {
     ]);
   });
 });
+
+describe("gap bo‘laklari: o‘zlik olmoshi, tire, majhul kesim", () => {
+  const roles = (s: string) => analyzeSentence(s, new Map()).roles.map((r) => r.role);
+  it("o‘z + egalikli ot — aniqlovchi, gap boshidagi ot — ega", () => {
+    expect(roles("Inson o‘z xatolaridan o‘rganadi.")).toEqual(["ega", "aniqlovchi", "to‘ldiruvchi", "kesim"]);
+    expect(roles("Bola o‘z kitobini o‘qidi.")).toEqual(["ega", "aniqlovchi", "to‘ldiruvchi", "kesim"]);
+  });
+  it("ega va ot kesim orasidagi tire", () => {
+    expect(roles("Kitob — bilim manbai.")).toEqual(["ega", "aniqlovchi", "kesim"]);
+  });
+});

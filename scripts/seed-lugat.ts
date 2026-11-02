@@ -13,6 +13,7 @@ const FILES: Array<[string, ImportTarget]> = [
   ["iboralar.csv", "idiom"],
   ["ozlashma.csv", "loanword"],
   ["imlo.csv", "spelling"],
+  ["leksemalar.csv", "lexeme"],
 ];
 
 async function main() {

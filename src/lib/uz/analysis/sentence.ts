@@ -42,6 +42,8 @@ const TIME_WORDS = new Set(["bugun", "kecha", "ertaga", "hozir", "endi", "doim",
 const MANNER_WORDS = new Set(["tez", "sekin", "asta", "birga", "yolg'iz", "ko'p", "oz", "juda", "yaxshi", "yomon", "zo'r", "jim"]);
 const POSTPOSITIONS = new Set(["bilan", "uchun", "haqida", "orqali", "sari", "kabi", "singari", "tomon", "qadar", "bo'ylab"]);
 const PLACE_HINT = /(maktab|uy|shahar|qishloq|bozor|ko'cha|xona|bog'|daryo|tog'|ishxona|kutubxona|toshkent|samarqand|buxoro|o'zbekiston|joy|dala|sinf|hovli)/;
+/** O‘rin bildiruvchi ko‘makchi otlar: daraxt tagida, uy oldida */
+const POSITION_NOUN = /^(tag|ost|ust|old|orqa|yon|ich|o'rta|atrof)/;
 
 function caseOf(a: MorphAnalysis | undefined): string | null {
   const c = a?.affixes.find((x) => /kelishigi/.test(x.name));
@@ -74,7 +76,8 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
   let k = words.length - 1;
   while (k > 0 && POSTPOSITIONS.has(keys[k])) k--;
   const kesimA = an[k];
-  const verbal = pos[k] === "fe’l" || hasAffix(kesimA, /zamon|shaxs|mayli|kesimlik/);
+  // Egalik qo‘shimchasi ("3-shaxs egalik") fe’l belgisi emas: poytaxti, manbai — ot kesim
+  const verbal = pos[k] === "fe’l" || !!kesimA?.affixes.some((x) => /zamon|mayli|kesimlik/.test(x.name) || (/shaxs/.test(x.name) && !/egalik/.test(x.name)));
   set(k, {
     role: "kesim",
     question: verbal ? "nima qildi? / nima qilyapti?" : "kim? / nima? / qanday?",
@@ -84,6 +87,9 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
       : "Gap oxirida turgan so‘z. Ot yoki sifat ham kesim bo‘lishi mumkin (ot kesim).",
   });
   const kesimPerson = personOf(kesimA);
+  // Majhul nisbatdagi kesim (ochildi, yozildi): oldidagi qo‘shimchasiz ot — to‘ldiruvchi emas, ega
+  const passive = hasAffix(kesimA, /majhul/);
+  const objectSlot = verbal && !passive;
 
   // 2. Kesimga bog‘liq bo‘laklar va aniqlovchilar
   for (let i = 0; i < k; i++) {
@@ -106,6 +112,18 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
         head: k,
       });
       links.push({ from: i, to: k, type: "boshqaruv" });
+      continue;
+    }
+    // O‘zlik olmoshi "o‘z" egalik qo‘shimchali otdan oldin — belgisiz qaratqich aniqlovchi (o‘z xatolari = o‘zining xatolari)
+    if (key === "o'z" && next >= 0 && next !== k && hasAffix(an[next], /egalik/)) {
+      set(i, {
+        role: "aniqlovchi",
+        question: "kimning? / nimaning?",
+        basis: "qoida",
+        explanation: `O‘zlik olmoshi: “${words[next]}” so‘zining kimga tegishli ekanini bildiradi (o‘zining ${words[next]}) — qaratqich aniqlovchi.`,
+        head: next,
+      });
+      links.push({ from: i, to: next, type: "moslashuv" });
       continue;
     }
     if (c === "qaratqich kelishigi") {
@@ -131,7 +149,7 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
       continue;
     }
     if (c && /jo‘nalish|o‘rin-payt|chiqish/.test(c)) {
-      const place = PLACE_HINT.test(key) || TIME_WORDS.has(a?.rootKey ?? "");
+      const place = PLACE_HINT.test(key) || POSITION_NOUN.test(key) || TIME_WORDS.has(a?.rootKey ?? "");
       const q = /jo‘nalish/.test(c) ? ["kimga? nimaga?", "qayerga?"] : /chiqish/.test(c) ? ["kimdan? nimadan?", "qayerdan?"] : ["kimda? nimada?", "qayerda? qachon?"];
       set(i, {
         role: place ? "hol" : "to‘ldiruvchi",
@@ -171,13 +189,23 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
     }
   }
 
-  // 3. Ega: bosh kelishikdagi ot/olmosh, kesim bilan shaxs-sonda mos keladi
-  let egaIndex = -1;
-  for (let i = 0; i < k; i++) {
+  // 3. Ega: bosh kelishikdagi ot/olmosh, kesim bilan shaxs-sonda mos keladi.
+  // Ega va ot kesim orasidagi tire (Kitob — bilim manbai): tiredan oldingi so‘z — ega.
+  const dashAt = sentence.search(/\s[—–-]\s/);
+  const beforeDash = dashAt >= 0 ? (sentence.slice(0, dashAt).match(/\p{L}+(?:['`‘’ʻʼ-]\p{L}+)*/gu) ?? []).length - 1 : -1;
+  let egaIndex = beforeDash >= 0 && beforeDash < k && roles[beforeDash].role === "noma’lum" ? beforeDash : -1;
+  for (let i = 0; i < k && egaIndex < 0; i++) {
     if (roles[i].role !== "noma’lum" || POSTPOSITIONS.has(keys[i])) continue;
     if (caseOf(an[i]) || pos[i] === "fe’l") continue;
-    const nextRole = roles[i + 1];
-    if (nextRole && i + 1 < k && pos[i + 1] !== "fe’l" && !caseOf(an[i + 1]) && roles[i + 1].role === "noma’lum" && !PRONOUNS.has(keys[i])) continue;
+    // Keyingi so‘zni aniqlayotgan bo‘lsa (maktab bog‘i, daraxt tagida, temir eshik) — ega emas.
+    // Egalik qo‘shimchali so‘z (onam) belgisiz aniqlovchi bo‘lmaydi; fe’l kesim oldidagi qo‘shimchasiz ot esa to‘ldiruvchi (onam choy ichdi).
+    const nextIsHead =
+      i + 1 < k &&
+      pos[i + 1] !== "fe’l" &&
+      !PRONOUNS.has(keys[i]) &&
+      !hasAffix(an[i], /egalik/) &&
+      (hasAffix(an[i + 1], /egalik/) || (!caseOf(an[i + 1]) && roles[i + 1].role === "noma’lum" && !(objectSlot && i + 1 === k - 1)));
+    if (nextIsHead) continue;
     egaIndex = i;
     break;
   }
@@ -200,7 +228,7 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
   }
 
   // 4a. Fe’l kesim oldidagi qo‘shimchasiz ot — belgisiz tushum kelishigidagi to‘ldiruvchi (xat yozdim)
-  if (verbal && k > 0 && roles[k - 1].role === "noma’lum" && !caseOf(an[k - 1]) && !POSTPOSITIONS.has(keys[k - 1]) && pos[k - 1] !== "fe’l") {
+  if (objectSlot && k > 0 && roles[k - 1].role === "noma’lum" && !caseOf(an[k - 1]) && !POSTPOSITIONS.has(keys[k - 1]) && pos[k - 1] !== "fe’l") {
     set(k - 1, {
       role: "to‘ldiruvchi",
       question: "nimani? (belgisiz)",
@@ -216,7 +244,9 @@ export function analyzeSentence(sentence: string, lexicon: Map<string, LexiconEn
   for (const r of roles) {
     if (r.role !== "noma’lum" || POSTPOSITIONS.has(keys[r.index])) continue;
     const nxt = r.index + 1;
-    if (nxt <= k && roles[nxt] && ["ega", "to‘ldiruvchi", "hol", "aniqlovchi"].includes(roles[nxt].role) && pos[nxt] !== "fe’l") {
+    // Ot kesimdan oldingi so‘z ham uni aniqlashi mumkin: bilim manbai
+    const nominalKesim = nxt === k && !verbal;
+    if (nxt <= k && roles[nxt] && (["ega", "to‘ldiruvchi", "hol", "aniqlovchi"].includes(roles[nxt].role) || nominalKesim) && pos[nxt] !== "fe’l") {
       set(r.index, {
         role: "aniqlovchi",
         question: "qanday? / qaysi?",

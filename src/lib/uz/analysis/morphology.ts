@@ -163,6 +163,8 @@ function candidates(word: string): Path[] {
       } else if (a.slot > maxSlot) continue;
       const rest = stem.slice(0, -a.form.length);
       if (rest.replace(/'/g, "").length < 2 || !/[aeiou]/.test(rest)) continue;
+      // So‘z yasovchidan oldin kamida 3 harfli o‘zak: ish-la, so‘z-la (lekin bola ≠ bo-la, ota ≠ ot-a)
+      if (a.kind === "so‘z yasovchi" && rest.replace(/'/g, "").length < 3) continue;
       if (a.after === "vowel" && !VOWEL_END.test(rest)) continue;
       if (a.after === "consonant" && VOWEL_END.test(rest)) continue;
       // 3-shaxs -di/-ti faqat hozirgi-kelasi (-a/-y) yoki davom (-yap) shaklidan keyin: bor-a-di, o‘qi-y-di, kel-yap-ti
