@@ -7,6 +7,7 @@ const ITEMS = [
   { href: "/admin/lugat", label: "Lug‘at yozuvlari", admin: true },
   { href: "/admin/izohlar", label: "Izohlar", admin: false },
   { href: "/admin/shikoyatlar", label: "Shikoyatlar", admin: false },
+  { href: "/admin/murojaatlar", label: "Murojaatlar", admin: false },
   { href: "/admin/import", label: "Import", admin: true },
   { href: "/admin/eksport", label: "Eksport va zaxira", admin: true },
   { href: "/admin/foydalanuvchilar", label: "Foydalanuvchilar", admin: true },

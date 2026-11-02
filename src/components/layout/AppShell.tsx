@@ -130,7 +130,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-6xl px-3 pb-28 pt-4 sm:px-4 lg:px-6 lg:pb-12 lg:pt-6">
           {children}
           <p className="mt-10 text-center text-xs text-ink-muted">
-            Avtomatik tahlil, tarjima va izohlarda ba’zan xatolar bo‘lishi mumkin — muhim ma’lumotni tekshirib ko‘ring.
+            Avtomatik tahlil, tarjima va izohlarda ba’zan xatolar bo‘lishi mumkin — muhim ma’lumotni tekshirib ko‘ring.{" "}
+            <Link href={`/aloqa?sahifa=${encodeURIComponent(pathname)}`} className="underline">
+              Kamchilik yoki taklif yuborish
+            </Link>
           </p>
         </main>
       </div>

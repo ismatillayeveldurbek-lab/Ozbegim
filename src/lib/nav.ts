@@ -8,6 +8,7 @@ import {
   History,
   Languages,
   House,
+  MessageSquareText,
   Microscope,
   Quote,
   Replace,
@@ -67,6 +68,7 @@ export const EXTRA_NAV: NavItem[] = [
   { href: "/tarix", label: "Ish tarixi", short: "Tarix", icon: History, description: "Roziligingiz bilan saqlangan ishlar." },
   { href: "/holat", label: "Imkoniyatlar holati", short: "Holat", icon: Activity, description: "Qaysi formatlar va xizmatlar ishlayotgani." },
   { href: "/qoidalar", label: "O‘girish qoidalari", short: "Qoidalar", icon: ScrollText, description: "Transliteratsiya qoidalari va cheklovlari." },
+  { href: "/aloqa", label: "Murojaatlar", short: "Murojaat", icon: MessageSquareText, description: "Kamchilik, shikoyat, taklif yoki savol yuborish va javobni olish." },
 ];
 
 export const HOME_NAV: NavItem = { href: "/", label: "Bosh sahifa", short: "Bosh sahifa", icon: House };

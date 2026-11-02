@@ -39,6 +39,8 @@ model User {
   auditLogs       AuditLog[]
   importJobs      ImportJob[]
   aiUsage         AiUsage[]
+  feedbacks       Feedback[]
+  feedbackMsgs    FeedbackMessage[]
 
   @@map("user")
 }
@@ -618,3 +620,55 @@ model AiUsage {
   @@index([createdAt])
   @@index([userId, createdAt])
 }
+
+// ───────────── Murojaatlar (kamchilik, shikoyat, taklif) ─────────────
+
+enum FeedbackKind {
+  BUG
+  COMPLAINT
+  SUGGESTION
+  QUESTION
+}
+
+/// OPEN — javob kutmoqda; ANSWERED — xodim javob bergan; CLOSED — yopilgan
+enum FeedbackStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model Feedback {
+  id            String            @id @default(cuid())
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind          FeedbackKind
+  subject       String
+  /// Murojaat yuborilgan sahifa (ixtiyoriy)
+  pageUrl       String?
+  status        FeedbackStatus    @default(OPEN)
+  /// Foydalanuvchi o‘qimagan xodim javobi bor
+  userUnread    Boolean           @default(false)
+  /// Xodimlar o‘qimagan foydalanuvchi xabari bor
+  staffUnread   Boolean           @default(true)
+  lastMessageAt DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  messages      FeedbackMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([userId, lastMessageAt])
+}
+
+model FeedbackMessage {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  /// null — muallif hisobi o‘chirilgan
+  authorId   String?
+  author     User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  fromStaff  Boolean  @default(false)
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([feedbackId, createdAt])
+}
+

@@ -2,7 +2,7 @@ import { Panel } from "@/components/ui/primitives";
 import { prisma } from "@/lib/server/db";
 
 export default async function AdminHome() {
-  const [notFound, popular, idioms, loanwords, comments, openReports, users] = await Promise.all([
+  const [notFound, popular, idioms, loanwords, comments, openReports, users, openFeedback] = await Promise.all([
     prisma.searchStat.findMany({ where: { misses: { gt: 0 } }, orderBy: { misses: "desc" }, take: 20 }),
     prisma.searchStat.findMany({ where: { hits: { gt: 0 } }, orderBy: { hits: "desc" }, take: 20 }),
     prisma.idiom.groupBy({ by: ["origin", "status"], _count: true }),
@@ -10,6 +10,7 @@ export default async function AdminHome() {
     prisma.comment.groupBy({ by: ["status"], _count: true }),
     prisma.report.count({ where: { status: "OPEN" } }),
     prisma.user.count(),
+    prisma.feedback.count({ where: { status: "OPEN" } }),
   ]);
   const sum = (rows: Array<{ _count: number }>) => rows.reduce((a, r) => a + r._count, 0);
   const verified = (rows: Array<{ _count: number; status: string; origin: string }>) =>
@@ -20,12 +21,13 @@ export default async function AdminHome() {
     { label: "O‘zlashma so‘zlar", value: sum(loanwords), sub: `${verified(loanwords)} tasdiqlangan · ${demo(loanwords)} namuna` },
     { label: "Izohlar", value: sum(comments), sub: comments.map((c) => `${c.status}: ${c._count}`).join(" · ") || "—" },
     { label: "Ochiq shikoyatlar", value: openReports, sub: "Ko‘rib chiqilishi kerak" },
+    { label: "Murojaatlar", value: openFeedback, sub: "Javob kutmoqda" },
     { label: "Foydalanuvchilar", value: users, sub: "Ro‘yxatdan o‘tganlar" },
   ];
   const kindLabel: Record<string, string> = { idiom: "ibora", loanword: "o‘zlashma", word: "so‘z" };
   return (
     <>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
           <li key={t.label} className="glass p-4">
             <p className="text-sm font-semibold text-ink-muted">{t.label}</p>
