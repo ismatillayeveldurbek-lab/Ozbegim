@@ -36,7 +36,9 @@ Qoidalar: matn mazmuni va uslubini o‘zgartirmang; ism-familiya, joy nomlari, a
 apostrof turini (' yoki ‘) o‘zgartirishni tavsiya qilmang; bir xatoni bir marta ko‘rsating.
 "original" — matndan HARFMA-HARF aynan ko‘chirilgan qisqa parcha (xatoli so‘z yoki so‘z birikmasi), "replacement" — uning to‘g‘ri yozilishi
 (matndagi apostrof uslubida), "explanation" — o‘zbek tilida 1 gaplik izoh, iloji bo‘lsa imlo qoidasi bilan. Xato bo‘lmasa, bo‘sh ro‘yxat qaytaring.`;
-const PUNCT_ON = `\nTinish belgilarini ham tekshiring: vergul (uyushiq bo‘laklar, kirish so‘z, undalma, qo‘shma gap qismlari, "lekin/ammo/chunki" oldidan), nuqta, so‘roq va undov belgilari, tire. Tinish tavsiyasida "original" — belgi qo‘yiladigan joydagi 1–3 so‘z, "replacement" — belgi qo‘yilgan holi.`;
+const PUNCT_ON = `\nTinish belgilarini ham tekshiring: vergul (uyushiq bo‘laklar, kirish so‘z, undalma, qo‘shma gap qismlari, "lekin/ammo/chunki" oldidan), nuqta, so‘roq va undov belgilari, tire. Tinish tavsiyasida "original" — belgi qo‘yiladigan joydagi 1–3 so‘z, "replacement" — belgi qo‘yilgan holi.
+Muhim: bir parchada ham imlo, ham tinish xatosi bo‘lsa (masalan "dostidir U" — "do‘st" xato va nuqta yo‘q), BITTA tavsiya bering va "replacement"da
+barcha xatolarni birga tuzating ("do‘stidir. U"); "type" — imlo. Imlo xatosini tinish tavsiyasi ichida qoldirib ketmang.`;
 const PUNCT_OFF = `\nTinish belgilari (vergul, nuqta, tire) bo‘yicha tavsiya bermang.`;
 
 type Item = { original: string; replacement: string; type: string; explanation: string };
