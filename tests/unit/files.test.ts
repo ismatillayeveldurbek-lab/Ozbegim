@@ -52,6 +52,32 @@ describe("DOCX", () => {
   });
 });
 
+describe("DOCX: shrift va diagrammalar", () => {
+  it("lotin → kirillda kirill harflari asl (ascii) shriftda qoladi; diagramma sarlavhasi o‘giriladi", async () => {
+    const body = `<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Calibri" w:cs="Arial"/></w:rPr><w:t>Salom</w:t></w:r></w:p>`;
+    const styles = `<?xml version="1.0"?><w:styles xmlns:w="w"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="majorHAnsi"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>`;
+    const chart = `<?xml version="1.0"?><c:chartSpace xmlns:c="c" xmlns:a="a"><c:title><c:tx><c:rich><a:p><a:r><a:t>Oylik sotuv</a:t></a:r></a:p></c:rich></c:tx></c:title></c:chartSpace>`;
+    const input = await makeDocx(body, { "word/styles.xml": styles, "word/charts/chart1.xml": chart });
+    const r = await convertFile("docx", "h.docx", input, { direction: "lat2cyr" });
+    if (r.kind !== "file") throw new Error("file kutilgan");
+    const zip = await JSZip.loadAsync(r.data);
+    const doc = await zip.file("word/document.xml")!.async("string");
+    expect(doc).toContain('<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>');
+    expect(doc).toContain("<w:t>Салом</w:t>");
+    expect(await zip.file("word/styles.xml")!.async("string")).toContain('w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"');
+    expect(await zip.file("word/charts/chart1.xml")!.async("string")).toContain("<a:t>Ойлик сотув</a:t>");
+  });
+
+  it("kirill → lotinda ascii := hAnsi", async () => {
+    const body = `<w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Times New Roman"/></w:rPr><w:t>Салом</w:t></w:r></w:p>`;
+    const r = await convertFile("docx", "h.docx", await makeDocx(body), { direction: "cyr2lat" });
+    if (r.kind !== "file") throw new Error("file kutilgan");
+    const doc = await (await JSZip.loadAsync(r.data)).file("word/document.xml")!.async("string");
+    expect(doc).toContain('<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/>');
+    expect(doc).toContain("<w:t>Salom</w:t>");
+  });
+});
+
 describe("PPTX", () => {
   it("slayd matni o‘giriladi, tuzilma saqlanadi", async () => {
     const zip = new JSZip();
@@ -66,7 +92,7 @@ describe("PPTX", () => {
     if (r.kind !== "file") throw new Error();
     const out = await JSZip.loadAsync(r.data);
     expect(await out.file("ppt/slides/slide1.xml")!.async("string")).toBe(slide.replace("<a:t>C</a:t>", "<a:t>Ч</a:t>").replace("<a:t>hoy</a:t>", "<a:t>ой</a:t>").replace("Yangi yil", "Янги йил"));
-    expect(await out.file("ppt/charts/chart1.xml")!.async("string")).toContain("Diagramma");
+    expect(await out.file("ppt/charts/chart1.xml")!.async("string")).toContain("Диаграмма");
     expect(r.warnings.join(" ")).toContain("Diagrammalar");
   });
 });

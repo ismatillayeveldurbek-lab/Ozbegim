@@ -14,19 +14,44 @@ interface PartRule {
   text: string;
 }
 
+/** Diagramma sarlavhalari, SmartArt va Excel’dagi matn qutilari (DrawingML: a:p / a:t) */
+const drawingRule = (dir: string): PartRule => ({ pattern: new RegExp(`^${dir}\\/(charts\\/chart\\d+|diagrams\\/(data|drawing)\\d+|drawings\\/drawing\\d+)\\.xml$`), para: "a:p", text: "a:t" });
+
 const RULES: Record<"docx" | "pptx" | "xlsx", PartRule[]> = {
-  docx: [{ pattern: /^word\/(document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$/, para: "w:p", text: "w:t" }],
-  pptx: [{ pattern: /^ppt\/(slides\/slide\d+|notesSlides\/notesSlide\d+)\.xml$/, para: "a:p", text: "a:t" }],
+  docx: [{ pattern: /^word\/(document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$/, para: "w:p", text: "w:t" }, drawingRule("word")],
+  pptx: [{ pattern: /^ppt\/(slides\/slide\d+|notesSlides\/notesSlide\d+)\.xml$/, para: "a:p", text: "a:t" }, drawingRule("ppt")],
   xlsx: [
     { pattern: /^xl\/sharedStrings\.xml$/, para: "si", text: "t" },
     { pattern: /^xl\/worksheets\/sheet\d+\.xml$/, para: "is", text: "t" },
     { pattern: /^xl\/comments\d*\.xml$/, para: "text", text: "t" },
+    drawingRule("xl"),
   ],
 };
 
+/** Word shrift tanlovi: ASCII harflar w:ascii, kirill va boshqa harflar w:hAnsi shriftida chiziladi. */
+const WORD_FONT_PARTS = /^word\/(document|header\d*|footer\d*|footnotes|endnotes|comments|styles|numbering)\.xml$/;
+
+/**
+ * O‘girilgan matn asl shriftda qolishi uchun: lotin → kirillda hAnsi := ascii, kirill → lotinda ascii := hAnsi.
+ * Mavzu (theme) shrifti bo‘lsa, u ham ko‘chiriladi. Faqat w:rFonts atributlari o‘zgaradi.
+ */
+export function alignWordFonts(xml: string, direction: "lat2cyr" | "cyr2lat"): string {
+  const [src, dst] = direction === "lat2cyr" ? ["ascii", "hAnsi"] : ["hAnsi", "ascii"];
+  return xml.replace(/<w:rFonts\b([^>]*?)(\/?)>/g, (tag, attrStr: string, slash: string) => {
+    const attrs = new Map([...attrStr.matchAll(/\s([\w:]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+    const theme = attrs.get(`w:${src}Theme`);
+    const plain = attrs.get(`w:${src}`);
+    if (theme) attrs.set(`w:${dst}Theme`, theme);
+    else if (plain) {
+      attrs.set(`w:${dst}`, plain);
+      attrs.delete(`w:${dst}Theme`);
+    } else return tag;
+    return `<w:rFonts${[...attrs].map(([k, v]) => ` ${k}="${v}"`).join("")}${slash}>`;
+  });
+}
+
 const UNSUPPORTED_PARTS: Array<[RegExp, string]> = [
-  [/\/charts\//, "Diagrammalar (chart) ichidagi matn o‘girilmadi."],
-  [/\/diagrams\//, "SmartArt diagrammalari ichidagi matn o‘girilmadi."],
+  [/\/charts\/chart\d+\.xml$/, "Diagrammalardagi toifa va qator nomlari diagramma jadvalidan olinadi — ular ochilganda yangilanadi yoki jadvalda o‘giriladi."],
   [/\/embeddings\//, "Hujjatga joylashtirilgan boshqa fayllar (embedded) o‘zgartirilmadi."],
   [/^word\/media\/|^ppt\/media\/|^xl\/media\//, "Rasmlar ichidagi yozuvlar o‘zgartirilmaydi."],
 ];
@@ -54,9 +79,14 @@ export async function convertOffice(kind: "docx" | "pptx" | "xlsx", buf: Buffer,
     const file = zip.file(name);
     if (!file) continue;
     for (const [re, msg] of UNSUPPORTED_PARTS) if (re.test(name)) warnings.add(msg);
+    if (kind === "docx" && WORD_FONT_PARTS.test(name) && (opts.direction === "lat2cyr" || opts.direction === "cyr2lat")) {
+      const before = await file.async("string");
+      const after = alignWordFonts(before, opts.direction);
+      if (after !== before) zip.file(name, after);
+    }
     const rule = RULES[kind].find((r) => r.pattern.test(name));
     if (!rule) continue;
-    const xml = await file.async("string");
+    const xml = await zip.file(name)!.async("string");
     const r = transformXmlText(xml, rule.para, rule.text, tokenize);
     if (r.changed) {
       changedElements += r.changed;
