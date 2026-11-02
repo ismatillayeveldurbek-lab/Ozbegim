@@ -42,11 +42,16 @@ Senga gapning so‘zlari raqamlangan holda beriladi. HAR BIR so‘z uchun bitta 
 - "question" — shu bo‘lakka beriladigan aniq so‘roq (masalan: kim?, nima qiladi?, qanday?, kimning?, nimadan?, qayerda?, qachon?); yordamchi so‘z uchun "";
 - "explanation" — 1 gaplik aniq izoh: nega shu bo‘lak, qaysi so‘zga qanday bog‘langan;
 - "head" — tobe bo‘lsa, bog‘langan so‘z raqami (aniqlovchi → aniqlanmish, to‘ldiruvchi/hol → kesim yoki boshqaruvchi so‘z, ega → kesim); kesim, undalma va kirish so‘z uchun -1.
-Qoidalar: bo‘lakni kelishik qo‘shimchasiga emas, ma’no va bog‘lanishga qarab aniqla. Qo‘shma kesim yoki birikma bo‘lsa, har bir so‘zini o‘sha bo‘lak bilan belgila. Yashirin ega bo‘lsa, kesim izohida ayt.
+Qoidalar: bo‘lakni kelishik qo‘shimchasiga emas, ma’no va bog‘lanishga qarab aniqla.
+Daraja so‘zlari (eng, juda, nihoyatda, g‘oyat) sifat yoki ravish bilan birga bitta bo‘lak hosil qiladi: "eng katta" — ikkalasi ham aniqlovchi, "juda tez" ikkalasi hol; "head" — o‘sha sifat/ravish.
+Undalma, kirish so‘z va yordamchi so‘zga so‘roq berilmaydi — "question" bo‘sh (""). Qo‘shma kesim yoki birikma bo‘lsa, har bir so‘zini o‘sha bo‘lak bilan belgila. Yashirin ega bo‘lsa, kesim izohida ayt.
 Barcha matn o‘zbek lotin yozuvida. Ikkilanma, ehtimol, taxmin kabi so‘zlarni ishlatma — aniq javob ber.`;
 
 const WORD_RE = /\p{L}+(?:['`‘’ʻʼ-]\p{L}+)*/gu;
 const CACHE_DAYS = 30;
+/** Ko‘rsatma o‘zgarsa oshiriladi — eski kesh yozuvlari qayta so‘raladi */
+const PROMPT_VERSION = 2;
+const cacheTag = () => `${AI_MODEL()}|v${PROMPT_VERSION}`;
 
 export interface AiSentenceResult {
   words: string[];
@@ -93,14 +98,14 @@ export async function analyzeSentenceAi(input: unknown, userId?: string | null):
   const key = `gap:${normalizeKey(sentence)}`;
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
   const { model: cachedModel, ...cached } = (hit?.result ?? {}) as unknown as AiSentenceResult & { model?: string };
-  if (hit && cachedModel === AI_MODEL() && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return cached as AiSentenceResult;
+  if (hit && cachedModel === cacheTag() && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return cached as AiSentenceResult;
   const numbered = `Gap: ${sentence}\nSo‘zlar:\n${words.map((w, i) => `${i + 1}. ${w}`).join("\n")}`;
   const raw = await aiJson<unknown>(SENTENCE_PROMPT, numbered, SCHEMA, { maxTokens: 8000, effort: "medium", usage: { feature: "analyze", userId } });
   const result = normalizeSentenceAi(words, raw);
   await prisma.aiWordCache.upsert({
     where: { key },
-    create: { key, word: sentence.slice(0, 200), result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue },
-    update: { word: sentence.slice(0, 200), result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue, createdAt: new Date() },
+    create: { key, word: sentence.slice(0, 200), result: { ...result, model: cacheTag() } as unknown as Prisma.InputJsonValue },
+    update: { word: sentence.slice(0, 200), result: { ...result, model: cacheTag() } as unknown as Prisma.InputJsonValue, createdAt: new Date() },
   });
   return result;
 }
