@@ -20,7 +20,7 @@ beforeAll(async () => {
           id: "msg_test",
           type: "message",
           role: "assistant",
-          model: "claude-opus-5-5",
+          model: "claude-haiku-5-5",
           content: [{ type: "text", text: nextText }],
           stop_reason: "end_turn",
           stop_sequence: null,
@@ -52,7 +52,7 @@ describe("So‘z tahlilchisi (soxta AI bilan)", () => {
     expect(first.result).toEqual({ found: true, manosi: "Varaqlardan iborat asar", sinonimlar: ["asar", "nashr", "daftar"], antonimlar: [], misollar: ["Men kitob o‘qidim."], turkum: "ot" });
     const req = requests.at(-1);
     expect(req.headers["x-api-key"]).toBe("test-key");
-    expect(req.body.model).toBe("claude-opus-5-5");
+    expect(req.body.model).toBe("claude-haiku-5-5");
     expect(req.body.system).toBe(WORD_ANALYZER_PROMPT);
     expect(req.body.messages).toEqual([{ role: "user", content: word }]);
     const n = requests.length;

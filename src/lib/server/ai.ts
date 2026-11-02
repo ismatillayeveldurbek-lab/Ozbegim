@@ -25,7 +25,7 @@ export function aiConnected() {
   return aiProviders().length > 0;
 }
 
-export const AI_MODEL = () => process.env.AI_MODEL || "claude-opus-5-5";
+export const AI_MODEL = () => process.env.AI_MODEL || "claude-haiku-5-5";
 export const GEMINI_MODEL = () => process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 
 /** Keyingi xizmatga o‘tish mumkin bo‘lgan xatolar: limit, vaqtinchalik nosozlik, ulanish. */
@@ -45,7 +45,8 @@ function priceFor(provider: Provider, model: string): [number, number] {
   const env = (k: string) => (process.env[k] ? Number(process.env[k]) : undefined);
   const pick = (prefix: string, def: [number, number]): [number, number] => [env(`${prefix}_PRICE_IN`) ?? def[0], env(`${prefix}_PRICE_OUT`) ?? def[1]];
   if (provider === "gemini") return pick("GEMINI", /lite/i.test(model) ? [0.25, 1.5] : [0.5, 3]);
-  return pick("ANTHROPIC", [0, 0]);
+  // Claude API narxlari (2026-10): Haiku 5.5 $0.10/$0.50, Sonnet 5.5 $2/$10, Opus 5.5 $4/$20
+  return pick("ANTHROPIC", /haiku/i.test(model) ? [0.1, 0.5] : /sonnet/i.test(model) ? [2, 10] : [4, 20]);
 }
 
 /** Sarf bazaga yoziladi (matnsiz: faqat kim, qaysi bo‘lim, model va token soni). Xato so‘rovni buzmaydi. */
@@ -100,23 +101,35 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
 }
 
 async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
-  client ??= new Anthropic();
+  client ??= new Anthropic({ timeout: PROVIDER_TIMEOUT_MS, maxRetries: 1 });
+  const model = AI_MODEL();
+  // Qisqa vazifalar (tarjima, so‘z tahlili) uchun past effort yetarli va arzon
+  const effort = (process.env.AI_EFFORT as "low" | "medium" | "high" | undefined) || "low";
+  const params = {
+    model,
+    max_tokens: opts.maxTokens ?? 16000,
+    output_config: schema ? { effort, format: { type: "json_schema" as const, schema } } : { effort },
+    system,
+    messages: [{ role: "user" as const, content: user }],
+  };
+  // Server tomonidagi zaxira modeli faqat Opus/Sonnet 5.5 va Fable’da bor (Haiku’da yo‘q)
+  const serverFallback = /opus|sonnet-5-5|fable/i.test(model);
   let response;
   try {
-    response = await client.beta.messages.create({
-      model: AI_MODEL(),
-      max_tokens: opts.maxTokens ?? 16000,
-      // Xavfsizlik klassifikatori rad etsa, server mos zaxira modelga o‘tkazadi.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: schema ? { effort: "medium", format: { type: "json_schema", schema } } : { effort: "medium" },
-      system,
-      messages: [{ role: "user", content: user }],
-    });
+    response = serverFallback
+      ? await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
+      : await client.messages.create(params);
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) throw new HttpError(429, "Xizmat hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
-    if (e instanceof Anthropic.AuthenticationError) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
-    if (e instanceof Anthropic.APIError) throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
+    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
+      console.error(`Claude xatosi ${e.status}: ${e.message.slice(0, 300)}`);
+      throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
+    }
+    if (e instanceof Anthropic.APIError) {
+      console.error(`Claude xatosi ${e.status}: ${e.message.slice(0, 300)}`);
+      throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
+    }
+    console.error("Claude: ulanib bo‘lmadi yoki javob kechikdi");
     throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
   }
   if (response.stop_reason === "refusal") throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");

@@ -149,7 +149,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
       </div>
       <Notice kind="info">
         Xarajat taxminiy: token soni xizmatning o‘z javobidan olinadi, narx esa sozlamadagi tarif bo‘yicha hisoblanadi (Gemini Flash-Lite: $0.25 / $1.50,
-        Flash: $0.50 / $3.00 — 1 mln kirish / chiqish tokeni uchun). Aniq hisob — Google AI Studio → Usage. Tarifni GEMINI_PRICE_IN /
+        Flash: $0.50 / $3.00; Claude Haiku 5.5: $0.10 / $0.50 — 1 mln kirish / chiqish tokeni uchun). Aniq hisob — Google AI Studio → Usage. Tarifni GEMINI_PRICE_IN /
         GEMINI_PRICE_OUT, so‘m kursini USD_UZS o‘zgaruvchisi bilan o‘zgartirish mumkin. Foydalanuvchi matni saqlanmaydi.
       </Notice>
     </>
