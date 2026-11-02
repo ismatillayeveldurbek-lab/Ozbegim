@@ -132,7 +132,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           })}
         />
       </Panel>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <Panel>
           <h3 className="text-lg font-bold">Bo‘limlar bo‘yicha</h3>
           <Table head="Bo‘lim" rows={byFeature.map((f) => ({ key: f.feature, name: FEATURE[f.feature] ?? f.feature, s: t(f as unknown as Sum) }))} />
