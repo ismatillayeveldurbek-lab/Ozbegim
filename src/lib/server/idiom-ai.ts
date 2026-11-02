@@ -15,7 +15,7 @@ export const IDIOM_PROMPT = `Sen o'zbek tili frazeologiyasi bo'yicha mutaxassiss
 Qoidalar:
 - "manosi" — iboraning ko'chma (frazeologik) ma'nosi, so'zma-so'z emas; 1–2 gap.
 - "misol" — iborani to'g'ri qo'llagan bitta tabiiy gap.
-- "manodoshlar" — ma'nosi yaqin boshqa o'zbek iboralari (bo'lmasa — []).
+- "manodoshlar" — ma'nosi yaqin, o'zbek tilida keng ma'lum va lug'atlarda uchraydigan iboralar (ko'pi bilan 3 ta). Faqat aniq bilganingni yoz; o'zing yasagan yoki shubhali birikmalarni yozma. Ishonchsiz bo'lsang — [].
 - "izoh" — ixtiyoriy: qo'llanish doirasi (so'zlashuv, kitobiy) yoki iboraning boshqa shakli; bo'lmasa — "".
 - Ibora fe'l shaklida (bo'lmoq, qilmoq) yoki tuslangan holda (bo'ldi, qildi) berilishi mumkin — asosiy shaklini tushuntir.
 - Barcha matn o'zbek lotin yozuvida.
@@ -31,7 +31,7 @@ const schema = z.object({
   manodoshlar: z
     .union([z.array(z.string()), z.string()])
     .optional()
-    .transform((v) => (Array.isArray(v) ? v : v ? v.split(/[,;]/) : []).map((x) => x.trim()).filter((x) => x && x.length <= 120).slice(0, 6)),
+    .transform((v) => (Array.isArray(v) ? v : v ? v.split(/[,;]/) : []).map((x) => x.trim()).filter((x) => x && x.length <= 120).slice(0, 3)),
   izoh: z.string().trim().max(500).optional().default(""),
 });
 
@@ -49,6 +49,9 @@ export function normalizeIdiomAi(raw: unknown): IdiomAiResult {
 }
 
 const CACHE_DAYS = 30;
+/** Ko‘rsatma o‘zgarsa oshiriladi — eski kesh yozuvlari qayta so‘raladi */
+const PROMPT_VERSION = 2;
+const cacheTag = () => `${AI_MODEL()}|v${PROMPT_VERSION}`;
 
 export function validatePhrase(input: unknown): string {
   const s = typeof input === "string" ? input.trim().replace(/\s+/g, " ") : "";
@@ -62,14 +65,14 @@ export async function explainIdiomAi(phrase: string, userId?: string | null): Pr
   const key = `ibora:${normalizeKey(phrase)}`;
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
   const { model: cachedModel, ...cached } = (hit?.result ?? {}) as IdiomAiResult & { model?: string };
-  if (hit && cachedModel === AI_MODEL() && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: cached as IdiomAiResult, cached: true };
+  if (hit && cachedModel === cacheTag() && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: cached as IdiomAiResult, cached: true };
   const raw = await aiJson<unknown>(IDIOM_PROMPT, phrase, undefined, { maxTokens: 2000, effort: "medium", usage: { feature: "idiom", userId } });
   const result = normalizeIdiomAi(raw);
   if (result.found)
     await prisma.aiWordCache.upsert({
       where: { key },
-      create: { key, word: phrase, result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue },
-      update: { word: phrase, result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue, createdAt: new Date() },
+      create: { key, word: phrase, result: { ...result, model: cacheTag() } as unknown as Prisma.InputJsonValue },
+      update: { word: phrase, result: { ...result, model: cacheTag() } as unknown as Prisma.InputJsonValue, createdAt: new Date() },
     });
   return { result, cached: false };
 }
