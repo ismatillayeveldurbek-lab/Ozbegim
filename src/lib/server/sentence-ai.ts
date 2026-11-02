@@ -57,13 +57,16 @@ Gap haqida umumiy ma’lumot ham ber:
 - "izoh" — 1–2 gap: uyushiq bo‘laklar, qo‘shma gap turi (bog‘langan, ergashgan, bog‘lovchisiz) yoki boshqa muhim xususiyat; bo‘lmasa "".
 Qoidalar: bo‘lakni kelishik qo‘shimchasiga emas, ma’no va bog‘lanishga qarab aniqla.
 Daraja so‘zlari (eng, juda, nihoyatda, g‘oyat) sifat yoki ravish bilan birga bitta bo‘lak hosil qiladi: "eng katta" — ikkalasi ham aniqlovchi, "juda tez" ikkalasi hol; "head" — o‘sha sifat/ravish.
-Undalma, kirish so‘z va yordamchi so‘zga so‘roq berilmaydi — "question" bo‘sh (""). Qo‘shma kesim yoki birikma bo‘lsa, har bir so‘zini o‘sha bo‘lak bilan belgila. Yashirin ega bo‘lsa, kesim izohida ayt.
+Undalma, kirish so‘z va yordamchi so‘zga so‘roq berilmaydi — "question" bo‘sh ("").
+Birikma (harakat nomi, sifatdosh yoki ravishdosh oboroti, "kitob o‘qish", "maktabga boruvchi") bitta bo‘lak vazifasida kelsa, uning hamma so‘zlarini o‘sha bo‘lak bilan belgila
+va "explanation"da birikma ekanini ayt; "asos" va so‘zlar bo‘yicha belgilar bir-biriga zid bo‘lmasin.
+Gapda imlo xatosi bo‘lsa, so‘zni to‘g‘ri yozilgan shakli bo‘yicha tahlil qil (so‘zning o‘zini o‘zgartirma). Qo‘shma kesim yoki birikma bo‘lsa, har bir so‘zini o‘sha bo‘lak bilan belgila. Yashirin ega bo‘lsa, kesim izohida ayt.
 Barcha matn o‘zbek lotin yozuvida. Ikkilanma, ehtimol, taxmin kabi so‘zlarni ishlatma — aniq javob ber.`;
 
 const WORD_RE = /\p{L}+(?:['`‘’ʻʼ-]\p{L}+)*/gu;
 const CACHE_DAYS = 30;
 /** Ko‘rsatma o‘zgarsa oshiriladi — eski kesh yozuvlari qayta so‘raladi */
-const PROMPT_VERSION = 3;
+const PROMPT_VERSION = 4;
 const cacheTag = () => `${AI_MODEL()}|v${PROMPT_VERSION}`;
 
 export interface AiSentenceResult {

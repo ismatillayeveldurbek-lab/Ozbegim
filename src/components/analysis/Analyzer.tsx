@@ -10,7 +10,7 @@ interface Analysis {
   inferredPos: string | null;
   meaning: string | null;
   affixes: Array<{ form: string; kind: string; name: string }>;
-  basis: "lug‘at" | "qoidaviy taxmin";
+  basis: "lug‘at" | "qoidaviy taxmin" | "tahlil";
   lexiconStatus?: string;
   note?: string;
 }
@@ -88,8 +88,8 @@ function WordView({ r }: { r: WordResult }) {
       </section>
 
       {r.ambiguous && (
-        <Notice kind="info" title="Bir nechta tahlil mumkin">
-          Bu so‘z turli ma’no va tuzilishda bo‘lishi mumkin. Aniq tahlil uchun so‘zni gap ichida kiriting (“Gap” rejimi).
+        <Notice kind="info" title="Bir nechta tahlil">
+          Bu so‘z turli ma’no va tuzilishda qo‘llanadi — quyida har biri alohida ko‘rsatilgan. Gap ichidagi vazifasini ko‘rish uchun “Gap” rejimidan foydalaning.
         </Notice>
       )}
 
@@ -103,7 +103,7 @@ function WordView({ r }: { r: WordResult }) {
           <p className="mt-3 flex flex-wrap items-center gap-1 text-xl" aria-label="So‘z tarkibi">
             <span className="rounded-lg bg-accent-soft px-2 py-1 font-bold text-accent">{a.root}</span>
             {a.affixes.map((x, j) => (
-              <span key={j} className={`rounded-lg px-2 py-1 ${x.kind === "so‘z yasovchi" ? "bg-info-soft text-info" : "bg-warn-soft text-warn"}`}>
+              <span key={j} className={`rounded-lg px-2 py-1 ${x.kind === "so‘z yasovchi" ? "bg-info-soft text-info" : "bg-warn-soft text-warn"}`} title={x.name}>
                 -{x.form}
               </span>
             ))}
@@ -119,7 +119,7 @@ function WordView({ r }: { r: WordResult }) {
             </div>
             <div className="sm:col-span-2">
               <dt className="text-sm font-semibold text-ink-muted">Lug‘aviy ma’no</dt>
-              <dd>{a.meaning ?? "Lug‘atda ma’no kiritilmagan."}</dd>
+              <dd>{a.meaning || "—"}</dd>
             </div>
           </dl>
           {a.affixes.length > 0 && (
@@ -276,7 +276,12 @@ export function Analyzer() {
         setSent(results);
         setWord(null);
       } else {
-        setWord(await api<WordResult>(`/api/analyze?mode=word&q=${encodeURIComponent(q)}`));
+        // Bo‘g‘in va harf-tovush — qoidaviy (aniq); tarkib — to‘liq tahlil (tashqi xizmat), ulanmagan bo‘lsa qoidaviy
+        const [base, morph] = await Promise.all([
+          api<WordResult>(`/api/analyze?mode=word&q=${encodeURIComponent(q)}`),
+          api<{ analyses: Analysis[] }>("/api/ai/morph", { method: "POST", json: { word: q } }).catch(() => null),
+        ]);
+        setWord(morph?.analyses.length ? { ...base, analyses: morph.analyses, ambiguous: morph.analyses.length > 1, lexiconFound: true, examples: base.examples } : base);
         setSent(null);
       }
     } catch (err) {
