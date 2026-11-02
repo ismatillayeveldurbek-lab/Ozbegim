@@ -223,7 +223,8 @@ async function geminiText(system: string, user: string, schema: Record<string, u
       else break;
       await res.body?.cancel();
     }
-  } catch {
+  } catch (e) {
+    console.error(`Gemini: ${e instanceof Error && e.name === "TimeoutError" ? `${PROVIDER_TIMEOUT_MS / 1000} s ichida javob bermadi (model: ${GEMINI_MODEL()})` : "ulanib bo‘lmadi"}`);
     throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
   }
   if (res.status === 429) {

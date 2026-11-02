@@ -52,6 +52,8 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production" && process.env.BETTER_AUTH_URL?.startsWith("https"),
     defaultCookieAttributes: { httpOnly: true, sameSite: "lax" },
+    // Kirish limiti har bir IP uchun alohida bo‘lishi kerak (aks holda butun sayt bitta umumiy limitga tushadi)
+    ipAddress: { ipAddressHeaders: process.env.TRUST_PROXY === "true" ? ["x-forwarded-for"] : ["x-real-ip"] },
   },
   plugins: [nextCookies()],
 });
