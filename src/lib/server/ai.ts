@@ -1,5 +1,5 @@
 /**
- * AI tavsiyalari (ixtiyoriy): Claude API (ANTHROPIC_API_KEY), standart model — Claude Haiku 5.5. Kalit faqat serverda.
+ * AI tavsiyalari (ixtiyoriy): Claude API (ANTHROPIC_API_KEY), standart model — Claude Sonnet 5.5 (AI_MODEL bilan o‘zgaradi). Kalit faqat serverda.
  * Ulanmagan bo‘lsa — xato qaytariladi, hech qanday natija to‘qib chiqarilmaydi.
  * Foydalanuvchi matni loglarga yozilmaydi.
  */
@@ -14,7 +14,7 @@ export function aiConnected() {
   return !!process.env.ANTHROPIC_API_KEY;
 }
 
-export const AI_MODEL = () => process.env.AI_MODEL || "claude-haiku-5-5";
+export const AI_MODEL = () => process.env.AI_MODEL || "claude-sonnet-5-5";
 
 /** Javob kutish chegarasi */
 const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 45_000);

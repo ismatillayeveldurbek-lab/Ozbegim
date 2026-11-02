@@ -154,7 +154,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
         </Panel>
       </div>
       <Notice kind="info">
-        Xarajat taxminiy: token soni Claude javobidan olinadi, narx esa tarif bo‘yicha hisoblanadi (Claude Haiku 5.5: $0.10 / $0.50 — 1 mln
+        Xarajat taxminiy: token soni Claude javobidan olinadi, narx esa tarif bo‘yicha hisoblanadi (Claude Sonnet 5.5: $2 / $10, Haiku 5.5: $0.10 / $0.50 — 1 mln
         kirish / chiqish tokeni uchun). Aniq hisob — Claude Console → Cost &amp; spend. Tarifni ANTHROPIC_PRICE_IN / ANTHROPIC_PRICE_OUT, so‘m kursini
         USD_UZS o‘zgaruvchisi bilan o‘zgartirish mumkin. Foydalanuvchi matni saqlanmaydi.
       </Notice>

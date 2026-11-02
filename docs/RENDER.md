@@ -20,7 +20,7 @@ Migratsiyalar konteyner ishga tushganda bajariladi (`scripts/start-prod.sh`).
 2. Render `render.yaml` ni o‘qiydi: `ozbegim` veb-servisi va `ozbegim-db` bazasi yaratiladi.
    `BETTER_AUTH_SECRET` avtomatik generatsiya qilinadi, `DATABASE_URL` bazadan ulanadi.
 3. `ANTHROPIC_API_KEY` so‘ralsa — ixtiyoriy (AI bo‘limlari uchun), bo‘sh qoldirish mumkin.
-   Kalit: https://platform.claude.com → **API keys → Create key** (standart model — Claude Haiku 5.5).
+   Kalit: https://platform.claude.com → **API keys → Create key** (standart model — Claude Sonnet 5.5).
 4. **Apply** → birinchi build ~10 daqiqa davom etadi.
 
 Sayt manzili: `https://ozbegim-xxxx.onrender.com`. `BETTER_AUTH_URL` berilmagan bo‘lsa shu manzil

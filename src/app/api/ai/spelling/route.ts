@@ -31,7 +31,7 @@ export const POST = handle(async (req: Request) => {
   const body = await readJson(req, z.object({ text: z.string().min(1).max(8000, "Qo‘shimcha tekshiruv uchun matn 8000 belgidan oshmasin."), consent: z.literal(true) }));
   if (!body.consent) throw new HttpError(400, "Matnni tashqi xizmatga yuborishga rozilik berilmagan.");
   await enforceRateLimit(`ai:${user.id}`, 20, 3600);
-  const r = await aiJson<{ suggestions: Array<{ original: string; replacement: string; explanation: string }> }>(SYSTEM, body.text, SCHEMA, { usage: { feature: "spelling", userId: user.id } });
+  const r = await aiJson<{ suggestions: Array<{ original: string; replacement: string; explanation: string }> }>(SYSTEM, body.text, SCHEMA, { effort: "medium", usage: { feature: "spelling", userId: user.id } });
   // Matnda uchramaydigan "tavsiyalar" tashlab yuboriladi.
   const suggestions = r.suggestions.filter((s) => s.original && s.original !== s.replacement && body.text.includes(s.original)).slice(0, 100)
     // "original" matndagi bilan aynan mos qolishi kerak — faqat tavsiya va izoh tipografik qilinadi
