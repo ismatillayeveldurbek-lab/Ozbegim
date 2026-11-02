@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { EmptyState, Notice, Spinner } from "@/components/ui/primitives";
 import { api } from "@/lib/fetcher";
 import { CommentsSection } from "./CommentsSection";
+import { LoanwordAiFallback } from "./LoanwordAiFallback";
 import { LoanwordCard } from "./LoanwordCard";
 import { SearchForm } from "./SearchForm";
 import type { DiscussionDTO, LoanwordDTO } from "./types";
@@ -55,9 +56,7 @@ export function LoanwordSearch() {
           {data.exact ? (
             <LoanwordCard word={data.exact} />
           ) : (
-            <Notice kind="warn" title="Topilmadi">
-              {data.notFoundMessage}
-            </Notice>
+            <LoanwordAiFallback word={q.trim()} fallbackMessage={data.notFoundMessage} />
           )}
           {data.near.length > 0 && (
             <section aria-labelledby="near-title">
