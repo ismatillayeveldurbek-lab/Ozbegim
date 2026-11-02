@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { Prisma } from "@generated/prisma/client";
 import { toTypographic } from "@/lib/uz/alphabet";
 import { normalizeKey } from "@/lib/uz/normalize";
-import { aiJson } from "./ai";
+import { AI_MODEL, aiJson } from "./ai";
 import { prisma } from "./db";
 import { HttpError } from "./http";
 
@@ -84,15 +84,18 @@ const CACHE_DAYS = 30;
 export async function analyzeWordAi(word: string, userId?: string | null): Promise<{ result: WordAnalysis; cached: boolean }> {
   const key = normalizeKey(word);
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
-  if (hit && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: typographicAnalysis(hit.result as unknown as WordAnalysis), cached: true };
+  // Kesh boshqa model (masalan, oldingi arzonroq) natijasi bo‘lsa — qayta tahlil qilinadi
+  const { model: cachedModel, ...cachedResult } = (hit?.result ?? {}) as WordAnalysis & { model?: string };
+  if (hit && cachedModel === AI_MODEL() && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000)
+    return { result: typographicAnalysis(cachedResult as WordAnalysis), cached: true };
   const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000, effort: "medium", usage: { feature: "word", userId } });
   const result = normalizeWordAnalysis(raw);
   // Faqat topilgan so‘zlar keshlanadi (topilmaganlar keyinroq qayta urinib ko‘rilishi mumkin).
   if (result.found)
     await prisma.aiWordCache.upsert({
       where: { key },
-      create: { key, word, result: result as unknown as Prisma.InputJsonValue },
-      update: { word, result: result as unknown as Prisma.InputJsonValue, createdAt: new Date() },
+      create: { key, word, result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue },
+      update: { word, result: { ...result, model: AI_MODEL() } as unknown as Prisma.InputJsonValue, createdAt: new Date() },
     });
   return { result, cached: false };
 }
