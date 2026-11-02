@@ -38,7 +38,7 @@ const COOLDOWN_MS: Record<string, number> = { AI_RATE_LIMIT: 15 * 60_000, AI_AUT
 
 type Usage = { model: string; input: number; output: number };
 type Reply = { text: string; usage: Usage };
-export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate"; userId?: string | null };
+export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate" | "check"; userId?: string | null };
 
 /** Narx, USD / 1 mln token [kirish, chiqish]. Taxminiy — aniq hisob xizmatning o‘z panelida. Env bilan o‘zgartiriladi. */
 function priceFor(provider: Provider, model: string): [number, number] {
@@ -211,4 +211,22 @@ async function geminiText(system: string, user: string, schema: Record<string, u
     // Fikrlash tokenlari ham chiqish narxida hisoblanadi
     usage: { model: data.modelVersion || GEMINI_MODEL(), input: um?.promptTokenCount ?? 0, output: (um?.candidatesTokenCount ?? 0) + (um?.thoughtsTokenCount ?? 0) },
   };
+}
+
+/** Admin uchun: har bir ulangan xizmatga kichik so‘rov yuborib, ishlayotganini tekshiradi (navbat va dam olishdan qat’i nazar). */
+export async function checkProviders(userId: string) {
+  const system = 'Faqat JSON qaytaring: {"ok": true}';
+  return Promise.all(
+    aiProviders().map(async (provider) => {
+      const started = Date.now();
+      try {
+        const { text, usage } = provider === "gemini" ? await geminiText(system, "ping", undefined, { maxTokens: 50 }) : await anthropicText(system, "ping", undefined, { maxTokens: 50 });
+        await recordUsage({ feature: "check", userId }, provider, usage);
+        cooldownUntil.delete(provider);
+        return { provider, ok: parseAiJson(text) !== null, model: usage.model, ms: Date.now() - started, error: null as string | null };
+      } catch (e) {
+        return { provider, ok: false, model: null, ms: Date.now() - started, error: e instanceof HttpError ? `${e.code}: ${e.message}` : "noma’lum xato" };
+      }
+    }),
+  );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProviderCheck } from "@/components/admin/ProviderCheck";
 import { Notice, Panel } from "@/components/ui/primitives";
 import { prisma } from "@/lib/server/db";
 import { getCurrentUser, isAdmin } from "@/lib/server/session";
@@ -10,7 +11,7 @@ const PERIODS = [
   { key: "hammasi", label: "Hammasi", days: 0 },
 ] as const;
 
-const FEATURE: Record<string, string> = { spelling: "Imlo tavsiyalari", analyze: "Gap tahlili", word: "So‘z tahlilchisi", translate: "Tarjimon" };
+const FEATURE: Record<string, string> = { spelling: "Imlo tavsiyalari", analyze: "Gap tahlili", word: "So‘z tahlilchisi", translate: "Tarjimon", check: "Xizmat tekshiruvi" };
 const PROVIDER: Record<string, string> = { gemini: "Gemini", openai: "Groq (bepul)", anthropic: "Claude" };
 
 const num = (n: number) => n.toLocaleString("ru-RU");
@@ -96,6 +97,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           </Link>
         ))}
       </nav>
+      <Panel>
+        <h3 className="text-lg font-bold">Xizmatlar holati</h3>
+        <p className="mb-2 text-sm text-ink-muted">Har bir ulangan xizmatga bitta kichik so‘rov yuboriladi (narxi deyarli nol).</p>
+        <ProviderCheck />
+      </Panel>
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((x) => (
           <li key={x.label} className="glass p-4">
