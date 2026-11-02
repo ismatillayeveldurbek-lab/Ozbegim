@@ -16,7 +16,7 @@ export default function Page() {
   const s = servicesStatus();
   const services: Array<{ name: string; level: FeatureLevel; note: string }> = [
     { name: "Qo‘shimcha tavsiyalar (imlo, gap tahlili)", level: s.ai.connected ? "works" : "not_connected", note: s.ai.message },
-    { name: "So‘z tahlilchisi", level: s.ai.connected ? "works" : "not_connected", note: s.ai.connected ? "Natijalar 30 kun keshlanadi; taxmin sifatida belgilanadi." : s.ai.message },
+    { name: "So‘z tahlilchisi", level: s.ai.connected ? "works" : "not_connected", note: s.ai.connected ? "Natijalar 30 kun keshlanadi." : s.ai.message },
     { name: "Turistlar uchun tarjimon", level: s.ai.connected ? "works" : "not_connected", note: s.ai.connected ? "Matn saqlanmaydi." : s.ai.message },
     { name: "OCR — rasmdan matn ajratish", level: s.ocr.connected ? "limited" : "not_connected", note: s.ocr.message },
     { name: "Audio/video transkripsiyasi", level: "not_connected", note: s.transcription.message },

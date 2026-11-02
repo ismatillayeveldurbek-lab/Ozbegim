@@ -34,8 +34,6 @@ interface SentenceResult {
 const BASIS: Record<string, { text: string; cls: string }> = {
   "lug‘at": { text: "Lug‘at ma’lumoti", cls: "bg-accent-soft text-accent" },
   qoida: { text: "Qoidaviy natija", cls: "bg-info-soft text-info" },
-  "qoidaviy taxmin": { text: "Qoidaviy taxmin", cls: "bg-warn-soft text-warn" },
-  taxmin: { text: "Taxmin", cls: "bg-warn-soft text-warn" },
 };
 const ROLE_STYLE: Record<string, string> = {
   ega: "border-b-2 border-ink",
@@ -92,17 +90,12 @@ function WordView({ r }: { r: WordResult }) {
           Bu so‘z turli ma’no va tuzilishda bo‘lishi mumkin. Aniq tahlil uchun so‘zni gap ichida kiriting (“Gap” rejimi).
         </Notice>
       )}
-      {!r.lexiconFound && (
-        <Notice kind="warn" title="O‘zak lug‘atda topilmadi">
-          Quyidagi ajratish faqat qo‘shimchalar qoidasiga asoslangan taxmin. Lug‘aviy ma’no va so‘z turkumini aniqlash uchun lug‘at ma’lumoti yetarli emas.
-        </Notice>
-      )}
 
       {r.analyses.map((a, i) => (
         <section key={i} className="glass p-5">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-bold">{r.analyses.length > 1 ? `${i + 1}-tahlil` : "Tarkibi"}</h3>
-            <span className={`chip ${BASIS[a.basis].cls}`}>{BASIS[a.basis].text}</span>
+            {BASIS[a.basis] && <span className={`chip ${BASIS[a.basis].cls}`}>{BASIS[a.basis].text}</span>}
             {a.lexiconStatus && <span className="chip text-ink-soft">lug‘at yozuvi: {a.lexiconStatus}</span>}
           </div>
           <p className="mt-3 flex flex-wrap items-center gap-1 text-xl" aria-label="So‘z tarkibi">
@@ -120,7 +113,7 @@ function WordView({ r }: { r: WordResult }) {
             </div>
             <div>
               <dt className="text-sm font-semibold text-ink-muted">So‘z turkumi</dt>
-              <dd>{a.pos ?? (a.inferredPos ? `${a.inferredPos} (qo‘shimchadan taxmin)` : "aniqlanmadi")}</dd>
+              <dd>{a.pos ?? (a.inferredPos ? a.inferredPos : "aniqlanmadi")}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-sm font-semibold text-ink-muted">Lug‘aviy ma’no</dt>
@@ -182,7 +175,7 @@ function SentenceView({ r }: { r: SentenceResult }) {
           matn bilan ham yozilgan.
         </p>
       </section>
-      {r.warnings.map((w) => (
+      {r.warnings.filter((w) => !w.includes("Taxmin")).map((w) => (
         <Notice key={w} kind="warn">
           {w}
         </Notice>

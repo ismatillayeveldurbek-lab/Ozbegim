@@ -38,7 +38,7 @@ export function AiSpelling({ text, onApply }: { text: string; onApply: (next: st
       ) : (
         <>
           <p className="mt-1 text-sm text-ink-soft">
-            Bu tugma matningizni (8000 belgigacha) <strong>{status.ai.provider}</strong> xizmatiga yuboradi. Tavsiyalar taxminiy bo‘lib, xato bo‘lishi mumkin.
+            Bu tugma matningizni (8000 belgigacha) <strong>{status.ai.provider}</strong> xizmatiga yuboradi.
           </p>
           <label className="mt-2 flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-0.5 h-5 w-5 accent-[var(--accent)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
@@ -66,7 +66,6 @@ export function AiSpelling({ text, onApply }: { text: string; onApply: (next: st
             <ul className="mt-3 flex flex-col gap-2">
               {items.map((s, i) => (
                 <li key={i} className="rounded-xl border border-line p-3">
-                  <span className="chip bg-info-soft text-info">Taxmin</span>
                   <p className="mt-1">
                     <del className="text-danger">{s.original}</del> → <strong className="text-accent">{s.replacement}</strong>
                   </p>

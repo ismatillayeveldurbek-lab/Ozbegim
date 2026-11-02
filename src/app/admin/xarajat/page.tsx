@@ -11,7 +11,7 @@ const PERIODS = [
   { key: "hammasi", label: "Hammasi", days: 0 },
 ] as const;
 
-const FEATURE: Record<string, string> = { spelling: "Imlo tavsiyalari", analyze: "Gap tahlili", word: "So‘z tahlilchisi", translate: "Tarjimon", idiom: "Iboralar (taxmin)", check: "Xizmat tekshiruvi" };
+const FEATURE: Record<string, string> = { spelling: "Imlo tavsiyalari", analyze: "Gap tahlili", word: "So‘z tahlilchisi", translate: "Tarjimon", idiom: "Iboralar (bazada yo‘q)", check: "Xizmat tekshiruvi" };
 const PROVIDER: Record<string, string> = { gemini: "Gemini", openai: "Groq (bepul)", anthropic: "Claude" };
 
 const num = (n: number) => n.toLocaleString("ru-RU");

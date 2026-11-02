@@ -5,7 +5,7 @@ import { api } from "@/lib/fetcher";
 
 type Result = { found: true; manosi: string; misol: string; manodoshlar: string[]; izoh: string } | { found: false };
 
-/** Bazada yo‘q ibora: tashqi xizmatdan taxminiy izoh (aniq "Taxmin" deb belgilangan). */
+/** Bazada yo‘q ibora: izoh tashqi xizmatdan olinadi. */
 export function IdiomAiFallback({ phrase }: { phrase: string }) {
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,6 @@ export function IdiomAiFallback({ phrase }: { phrase: string }) {
     <article className="glass flex flex-col gap-3 p-5">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-xl font-bold">{phrase}</h3>
-        <span className="chip bg-info-soft text-info">Taxmin</span>
       </div>
       <p className="text-lg">{data.manosi}</p>
       {data.misol && (
@@ -51,9 +50,6 @@ export function IdiomAiFallback({ phrase }: { phrase: string }) {
         </p>
       )}
       {data.izoh && <p className="text-sm text-ink-muted">{data.izoh}</p>}
-      <p className="text-sm text-ink-muted">
-        Bu ibora hali bazada yo‘q: izoh tashqi xizmatdan olingan taxmin, tasdiqlangan lug‘at ma’lumoti emas. Administrator tekshirgach, bazaga qo‘shiladi.
-      </p>
     </article>
   );
 }
