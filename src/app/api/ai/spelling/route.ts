@@ -30,15 +30,22 @@ const SCHEMA = {
 const SYSTEM = `Siz o‘zbek tili (lotin yozuvi) bo‘yicha tajribali imlo muharririsiz. Matndagi BARCHA imlo xatolarini toping:
 noto‘g‘ri yozilgan so‘zlar (texnalogiya → texnologiya, kere → kerak, qobilyat → qobiliyat), o‘/g‘ va tutuq belgisi tushib qolishi yoki
 noto‘g‘ri harf (uqish → o‘qish), qo‘shib, ajratib yoki chiziqcha bilan yozish (dunyo qarash → dunyoqarash, ilm fan → ilm-fan),
-qo‘shimchalar va so‘z shakllaridagi grammatik xatolar (kelishik, egalik, shaxs-son moslashuvi, noto‘g‘ri qo‘shimcha), katta-kichik harf.
+qo‘shimchalar va so‘z shakllaridagi grammatik xatolar (kelishik, egalik, shaxs-son moslashuvi, noto‘g‘ri qo‘shimcha),
+katta-kichik harf (gap boshi, atoqli otlar, tashkilot nomlari).
 Har bir tavsiyaga "type" bering: imlo, grammatika, tinish, qoshib_yozish, ajratib_yozish, chiziqcha yoki katta_harf.
 Qoidalar: matn mazmuni va uslubini o‘zgartirmang; ism-familiya, joy nomlari, atamalar va to‘g‘ri yozilgan so‘zlarga tegmang;
 apostrof turini (' yoki ‘) o‘zgartirishni tavsiya qilmang; bir xatoni bir marta ko‘rsating.
 "original" — matndan HARFMA-HARF aynan ko‘chirilgan qisqa parcha (xatoli so‘z yoki so‘z birikmasi), "replacement" — uning to‘g‘ri yozilishi
 (matndagi apostrof uslubida), "explanation" — o‘zbek tilida 1 gaplik izoh, iloji bo‘lsa imlo qoidasi bilan. Xato bo‘lmasa, bo‘sh ro‘yxat qaytaring.`;
-const PUNCT_ON = `\nTinish belgilarini ham tekshiring: vergul (uyushiq bo‘laklar, kirish so‘z, undalma, qo‘shma gap qismlari, "lekin/ammo/chunki" oldidan), nuqta, so‘roq va undov belgilari, tire. Tinish tavsiyasida "original" — belgi qo‘yiladigan joydagi 1–3 so‘z, "replacement" — belgi qo‘yilgan holi.
+const PUNCT_ON = `\nTinish belgilari va mayda yozuv elementlarini ham sinchiklab tekshiring — birortasini ham o‘tkazib yubormang:
+- har bir gap oxirida nuqta, so‘roq yoki undov belgisi bo‘lishi (tushib qolgan nuqtani ham, so‘roq gapdagi "?" ni ham toping) va keyingi gap bosh harf bilan boshlanishi;
+- vergul: uyushiq bo‘laklar orasida, kirish so‘z va undalmadan keyin/oldin, qo‘shma gap qismlari orasida, "lekin, ammo, biroq, chunki, zero, ya’ni" oldidan, ortiqcha vergul;
+- tire: ega va ot kesim orasida (Kitob — bilim manbai), ko‘chirma gapda; tire (—) va chiziqcha (-) farqi;
+- qo‘shtirnoq («...» yoki "..."), qavslar, ikki nuqta, nuqtali vergul, ko‘p nuqta (...);
+- tinish belgisidan oldin bo‘shliq qo‘yilmasligi va keyin bo‘shliq qo‘yilishi, ortiqcha bo‘shliqlar. Tinish tavsiyasida "original" — belgi qo‘yiladigan joydagi 1–3 so‘z, "replacement" — belgi qo‘yilgan holi.
 Muhim: bir parchada ham imlo, ham tinish xatosi bo‘lsa (masalan "dostidir U" — "do‘st" xato va nuqta yo‘q), BITTA tavsiya bering va "replacement"da
 barcha xatolarni birga tuzating ("do‘stidir. U"); "type" — imlo. Imlo xatosini tinish tavsiyasi ichida qoldirib ketmang.`;
+/** Mayda elementlar ko‘p bo‘lgani uchun javob uzunligi bo‘yicha chegaralar katta */
 const PUNCT_OFF = `\nTinish belgilari (vergul, nuqta, tire) bo‘yicha tavsiya bermang.`;
 
 type Item = { original: string; replacement: string; type: string; explanation: string };

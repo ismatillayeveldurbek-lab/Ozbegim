@@ -40,7 +40,7 @@ export function SpellChecker() {
   const { data: session } = authClient.useSession();
   const [text, setText] = useState("");
   const [original, setOriginal] = useState("");
-  const [punctuation, setPunctuation] = useState(false);
+  const [punctuation, setPunctuation] = useState(true);
   const [resources, setResources] = useState<Resources>({ pairs: [], ignore: [] });
   const [rejected, setRejected] = useState<Set<string>>(new Set());
   const [undo, setUndo] = useState<Array<{ text: string; rejected: Set<string> }>>([]);
