@@ -19,6 +19,7 @@ export const AI_MODEL = () => process.env.AI_MODEL || "claude-haiku-5-5";
 /** Javob kutish chegarasi */
 const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 45_000);
 
+type Effort = "low" | "medium" | "high";
 type Usage = { model: string; input: number; output: number };
 type Reply = { text: string; usage: Usage };
 export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate" | "check"; userId?: string | null };
@@ -55,7 +56,7 @@ async function recordUsage(tag: UsageTag | undefined, u: Usage) {
  * @param schema berilsa — strukturali chiqish (output_config.format); berilmasa — javob matni
  *   ko‘rsatma bo‘yicha JSON deb kutiladi va xavfsiz parse qilinadi.
  */
-export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number; usage?: UsageTag } = {}): Promise<T> {
+export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number; effort?: Effort; usage?: UsageTag } = {}): Promise<T> {
   if (!aiConnected()) throw new HttpError(503, "Xizmat ulanmagan.", "AI_NOT_CONNECTED");
   const started = Date.now();
   const { text, usage } = await anthropicText(system, user, schema, opts);
@@ -66,11 +67,11 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
   return parsed as T;
 }
 
-async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
+async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number; effort?: Effort }): Promise<Reply> {
   client ??= new Anthropic({ timeout: PROVIDER_TIMEOUT_MS, maxRetries: 1 });
   const model = AI_MODEL();
   // Qisqa vazifalar (tarjima, so‘z tahlili) uchun past effort yetarli va arzon
-  const effort = (process.env.AI_EFFORT as "low" | "medium" | "high" | undefined) || "low";
+  const effort = opts.effort ?? ((process.env.AI_EFFORT as Effort | undefined) || "low");
   const params = {
     model,
     max_tokens: opts.maxTokens ?? 16000,

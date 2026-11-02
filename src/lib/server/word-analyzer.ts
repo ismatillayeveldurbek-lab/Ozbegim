@@ -13,7 +13,11 @@ import { HttpError } from "./http";
 
 export const WORD_ANALYZER_PROMPT = `Sen o'zbek tili mutaxassisisan. Berilgan so'zni tahlil qil va faqat quyidagi JSON formatda javob ber, boshqa hech narsa yozma:
 {"manosi": "...", "sinonimlar": ["..."], "antonimlar": ["..."], "misol": "...", "turkum": "..."}
-Agar so'z mavjud bo'lmasa yoki tushunarsiz bo'lsa: {"xato": "So'z topilmadi"}`;
+Qoidalar:
+- So'z istalgan turkumda bo'lishi mumkin: ot, sifat, fe'l (masalan, "chalkashmoq" yoki uning negizi), ravish, son, olmosh, ko'makchi, bog'lovchi, yuklama, undov, taqlid so'z, modal so'z. Kam ishlatiladigan, shevaga xos yoki qo'shimcha olgan so'zlarni ham tahlil qil (qo'shimchali bo'lsa, asosiy shaklining ma'nosini ber).
+- Barcha matn o'zbek lotin yozuvida bo'lsin. "turkum" — yuqoridagi nomlardan biri.
+- Sinonim va antonimlar haqiqiy so'zlar bo'lsin; antonimi bo'lmasa — bo'sh ro'yxat [].
+- Faqat ma'nosiz harflar to'plami yoki o'zbek tilida aniq mavjud bo'lmagan so'z bo'lsa: {"xato": "So'z topilmadi"}. Ishonchsiz bo'lsang ham, so'z mavjud bo'lishi mumkin bo'lsa — tahlil qil.`;
 
 export type WordAnalysis =
   | { found: true; manosi: string; sinonimlar: string[]; antonimlar: string[]; misollar: string[]; turkum: string }
@@ -81,7 +85,7 @@ export async function analyzeWordAi(word: string, userId?: string | null): Promi
   const key = normalizeKey(word);
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
   if (hit && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: typographicAnalysis(hit.result as unknown as WordAnalysis), cached: true };
-  const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000, usage: { feature: "word", userId } });
+  const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000, effort: "medium", usage: { feature: "word", userId } });
   const result = normalizeWordAnalysis(raw);
   // Faqat topilgan so‘zlar keshlanadi (topilmaganlar keyinroq qayta urinib ko‘rilishi mumkin).
   if (result.found)
