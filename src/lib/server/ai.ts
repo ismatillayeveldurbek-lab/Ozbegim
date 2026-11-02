@@ -1,6 +1,6 @@
 /**
  * AI tavsiyalari (ixtiyoriy). Ulangan xizmatlar navbat bilan sinaladi: Google Gemini (GEMINI_API_KEY),
- * OpenAI bilan mos API — standart Groq (LLM_API_KEY, bepul tarif bor), Claude API (ANTHROPIC_API_KEY).
+ * Claude API (ANTHROPIC_API_KEY).
  * Biri limitga yetsa yoki ishlamasa — keyingisiga o‘tiladi. Kalitlar faqat serverda.
  * Ulanmagan bo‘lsa — xato qaytariladi, hech qanday natija to‘qib chiqarilmaydi.
  * Foydalanuvchi matni loglarga yozilmaydi.
@@ -12,12 +12,11 @@ import { HttpError } from "./http";
 
 let client: Anthropic | null = null;
 
-type Provider = "gemini" | "openai" | "anthropic";
+type Provider = "gemini" | "anthropic";
 
 export function aiProviders(): Provider[] {
   const list: Provider[] = [];
   if (process.env.GEMINI_API_KEY) list.push("gemini");
-  if (process.env.LLM_API_KEY) list.push("openai");
   if (process.env.ANTHROPIC_API_KEY) list.push("anthropic");
   return list;
 }
@@ -27,13 +26,12 @@ export function aiConnected() {
 }
 
 export const AI_MODEL = () => process.env.AI_MODEL || "claude-opus-5-5";
-export const GEMINI_MODEL = () => process.env.GEMINI_MODEL || "gemini-flash-latest";
-export const LLM_MODEL = () => process.env.LLM_MODEL || "openai/gpt-oss-120b";
+export const GEMINI_MODEL = () => process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 
 /** Keyingi xizmatga o‘tish mumkin bo‘lgan xatolar: limit, vaqtinchalik nosozlik, ulanish. */
 const RETRYABLE = new Set(["AI_RATE_LIMIT", "AI_ERROR", "AI_AUTH", "AI_BAD_JSON"]);
 /** Bitta xizmatni kutish chegarasi; oshsa — keyingisiga o‘tiladi. */
-const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 25_000);
+const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 45_000);
 /** Limitga yetgan yoki javob bermagan xizmat bir muddat chetlab o‘tiladi (jarayon xotirasida). */
 const cooldownUntil = new Map<Provider, number>();
 const COOLDOWN_MS: Record<string, number> = { AI_RATE_LIMIT: 15 * 60_000, AI_AUTH: 30 * 60_000, AI_ERROR: 2 * 60_000 };
@@ -47,7 +45,6 @@ function priceFor(provider: Provider, model: string): [number, number] {
   const env = (k: string) => (process.env[k] ? Number(process.env[k]) : undefined);
   const pick = (prefix: string, def: [number, number]): [number, number] => [env(`${prefix}_PRICE_IN`) ?? def[0], env(`${prefix}_PRICE_OUT`) ?? def[1]];
   if (provider === "gemini") return pick("GEMINI", /lite/i.test(model) ? [0.25, 1.5] : [0.5, 3]);
-  if (provider === "openai") return pick("LLM", [0, 0]); // Groq bepul tarifi
   return pick("ANTHROPIC", [0, 0]);
 }
 
@@ -85,7 +82,7 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
     const started = Date.now();
     try {
       const { text, usage } =
-        provider === "gemini" ? await geminiText(system, user, schema, opts) : provider === "openai" ? await openaiText(system, user, schema, opts) : await anthropicText(system, user, schema, opts);
+        provider === "gemini" ? await geminiText(system, user, schema, opts) : await anthropicText(system, user, schema, opts);
       await recordUsage(opts.usage, provider, usage);
       const parsed = parseAiJson(text);
       if (parsed === null || typeof parsed !== "object") throw new HttpError(502, "Javobni o‘qib bo‘lmadi. Qayta urinib ko‘ring.", "AI_BAD_JSON");
@@ -100,56 +97,6 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
     }
   }
   throw lastError;
-}
-
-/** OpenAI bilan mos Chat Completions API (Groq, OpenRouter, Cerebras, Mistral va h.k.). */
-async function openaiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
-  const base = (process.env.LLM_BASE_URL || "https://api.groq.com/openai/v1").replace(/\/$/, "");
-  const sys = schema ? `${system}\n\nJavobni faqat JSON ko‘rinishida, quyidagi JSON Schema bo‘yicha qaytaring:\n${JSON.stringify(schema)}` : `${system}\n\nJavobni faqat JSON ko‘rinishida qaytaring.`;
-  const send = (jsonMode: boolean) =>
-    fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.LLM_API_KEY}` },
-      body: JSON.stringify({
-        model: LLM_MODEL(),
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: user },
-        ],
-        max_tokens: Math.max(opts.maxTokens ?? 8000, 4000),
-        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-      }),
-      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
-    });
-  let res: Response;
-  try {
-    res = await send(true);
-    if (res.status === 400) {
-      await res.body?.cancel();
-      res = await send(false);
-    }
-  } catch {
-    throw new HttpError(502, "Xizmatga ulanib bo‘lmadi.", "AI_ERROR");
-  }
-  if (!res.ok) {
-    const detail = (await res.text().catch(() => "")).slice(0, 300);
-    console.error(`LLM xatosi ${res.status}: ${detail}`);
-    if (res.status === 429) throw new HttpError(429, "Xizmat hozir band. Birozdan keyin urinib ko‘ring.", "AI_RATE_LIMIT");
-    if (res.status === 401 || res.status === 403) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
-    throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
-  }
-  const data = (await res.json()) as {
-    model?: string;
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
-    choices?: Array<{ finish_reason?: string; message?: { content?: string | null } }>;
-  };
-  const choice = data.choices?.[0];
-  if (choice?.finish_reason === "length") throw new HttpError(422, "Matn juda uzun — javob to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
-  if (choice?.finish_reason === "content_filter") throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");
-  return {
-    text: choice?.message?.content ?? "",
-    usage: { model: data.model || LLM_MODEL(), input: data.usage?.prompt_tokens ?? 0, output: data.usage?.completion_tokens ?? 0 },
-  };
 }
 
 async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
