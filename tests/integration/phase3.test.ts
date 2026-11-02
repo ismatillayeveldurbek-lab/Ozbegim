@@ -84,7 +84,7 @@ describe("tashqi xizmatlar ulanmaganda natija to‘qilmaydi", () => {
     const r = await u.json("/api/ai/spelling", { method: "POST", json: { text: "kop malumot", consent: true } });
     expect(r.status).toBe(503);
     expect(r.body.error).toContain("ulanmagan");
-    expect((await u.json("/api/ai/analyze", { method: "POST", json: { sentence: "Men keldim", consent: true } })).status).toBe(503);
+    expect((await u.json("/api/ai/analyze", { method: "POST", json: { sentence: "Men keldim" } })).status).toBe(503);
     expect((await u.json("/api/ai/spelling", { method: "POST", json: { text: "x", consent: false } })).status).toBe(400);
     const st = await new Client().json("/api/status");
     expect(st.body.ai.connected).toBe(false);

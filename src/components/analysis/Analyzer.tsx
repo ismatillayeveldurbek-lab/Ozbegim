@@ -1,9 +1,7 @@
 "use client";
-import { Lightbulb, Microscope } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Microscope } from "lucide-react";
+import { useState } from "react";
 import { Notice, Spinner } from "@/components/ui/primitives";
-import { useToast } from "@/components/ui/Toast";
-import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/fetcher";
 
 interface Analysis {
@@ -46,6 +44,7 @@ const ROLE_STYLE: Record<string, string> = {
   "to‘ldiruvchi": "border-b-2 border-dashed border-ink",
   hol: "border-b-2 border-dotted border-ink",
 };
+const ROLE_LABEL: Record<string, string> = { "noma’lum": "—", yordamchi: "yordamchi so‘z" };
 const LINK: Record<string, string> = { predikativ: "predikativ (ega — kesim)", moslashuv: "moslashuv", boshqaruv: "boshqaruv", bitishuv: "bitishuv" };
 
 function WordView({ r }: { r: WordResult }) {
@@ -174,7 +173,7 @@ function SentenceView({ r }: { r: SentenceResult }) {
           {r.roles.map((w) => (
             <span key={w.index} className="inline-flex flex-col items-center">
               <span className={`px-0.5 ${ROLE_STYLE[w.role] ?? ""}`}>{w.word}</span>
-              <span className="text-xs font-semibold text-ink-muted">{w.role === "noma’lum" ? "—" : w.role}</span>
+              <span className="text-xs font-semibold text-ink-muted">{ROLE_LABEL[w.role] ?? w.role}</span>
             </span>
           ))}
         </p>
@@ -195,9 +194,9 @@ function SentenceView({ r }: { r: SentenceResult }) {
             <li key={w.index} className="glass p-4">
               <p className="flex flex-wrap items-center gap-2">
                 <strong className="text-lg">{w.word}</strong>
-                <span className="chip text-ink-soft">{w.role === "noma’lum" ? "bo‘lak aniqlanmadi" : w.role}</span>
+                <span className="chip text-ink-soft">{w.role === "noma’lum" ? "bo‘lak aniqlanmadi" : (ROLE_LABEL[w.role] ?? w.role)}</span>
                 {w.question && <span className="text-sm text-ink-muted">so‘roq: {w.question}</span>}
-                <span className={`chip ${BASIS[w.basis]?.cls ?? ""}`}>{BASIS[w.basis]?.text ?? w.basis}</span>
+                {BASIS[w.basis] && <span className={`chip ${BASIS[w.basis].cls}`}>{BASIS[w.basis].text}</span>}
               </p>
               <p className="mt-1 text-ink-soft">{w.explanation}</p>
               {w.alternative && <p className="mt-1 text-sm text-ink-muted">Muqobil talqin: {w.alternative}</p>}
@@ -221,70 +220,9 @@ function SentenceView({ r }: { r: SentenceResult }) {
   );
 }
 
-function AiSentence({ sentence }: { sentence: string }) {
-  const { data: session } = authClient.useSession();
-  const toast = useToast();
-  const [status, setStatus] = useState<{ ai: { connected: boolean; provider: string | null } } | null>(null);
-  const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<{ parts: Array<{ words: string; role: string; question: string; explanation: string }>; note: string } | null>(null);
-  useEffect(() => {
-    api<typeof status>("/api/status").then(setStatus).catch(() => {});
-  }, []);
-  if (!status) return null;
-  return (
-    <section className="glass p-5">
-      <h3 className="flex items-center gap-2 font-bold">
-        <Lightbulb className="h-5 w-5 text-info" aria-hidden /> Kengaytirilgan tahlil
-      </h3>
-      {!status.ai.connected ? (
-        <p className="mt-1 text-sm text-ink-soft">Xizmat ulanmagan. Yuqoridagi natijalar faqat qoidaviy tahlil va lug‘at ma’lumotiga asoslangan.</p>
-      ) : !session ? (
-        <p className="mt-1 text-sm text-ink-soft">Kengaytirilgan tahlil uchun tizimga kiring.</p>
-      ) : (
-        <>
-          <p className="mt-1 text-sm text-ink-soft">Gapingiz {status.ai.provider} xizmatiga yuboriladi. Natija taxmin sifatida alohida ko‘rsatiladi.</p>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={consent} onChange={(e) => setConsent(e.target.checked)} /> Gapni yuborishga roziman
-          </label>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm mt-2"
-            disabled={!consent || busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                setRes(await api("/api/ai/analyze", { method: "POST", json: { sentence, consent } }));
-              } catch (e) {
-                toast.error((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? "Kutilmoqda…" : "Kengaytirilgan tahlilni olish"}
-          </button>
-          {res && (
-            <ul className="mt-3 flex flex-col gap-2">
-              {res.parts.map((p, i) => (
-                <li key={i} className="rounded-xl border border-line p-3">
-                  <span className="chip bg-info-soft text-info">Taxmin</span> <strong>{p.words}</strong> — {p.role} ({p.question})
-                  <p className="text-sm text-ink-soft">{p.explanation}</p>
-                </li>
-              ))}
-              {res.note && <li className="text-sm text-ink-muted">{res.note}</li>}
-            </ul>
-          )}
-        </>
-      )}
-    </section>
-  );
-}
-
 export function Analyzer() {
   const [mode, setMode] = useState<"word" | "sentence">("word");
   const [q, setQ] = useState("");
-  const [submitted, setSubmitted] = useState<{ mode: string; q: string } | null>(null);
   const [word, setWord] = useState<WordResult | null>(null);
   const [sent, setSent] = useState<SentenceResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -296,7 +234,16 @@ export function Analyzer() {
     setBusy(true);
     setError(null);
     try {
-      const r = await api<WordResult & SentenceResult>(`/api/analyze?mode=${mode}&q=${encodeURIComponent(q)}`);
+      // Gap: avval to‘liq tahlil (tashqi xizmat); xizmat ulanmagan yoki javob bermasa — qoidaviy tahlil
+      let r: WordResult & SentenceResult;
+      if (mode === "sentence") {
+        try {
+          r = await api<WordResult & SentenceResult>("/api/ai/analyze", { method: "POST", json: { sentence: q } });
+        } catch (err) {
+          if ((err as { status?: number }).status === 400) throw err;
+          r = await api<WordResult & SentenceResult>(`/api/analyze?mode=sentence&q=${encodeURIComponent(q)}`);
+        }
+      } else r = await api<WordResult & SentenceResult>(`/api/analyze?mode=word&q=${encodeURIComponent(q)}`);
       if (mode === "word") {
         setWord(r);
         setSent(null);
@@ -304,7 +251,6 @@ export function Analyzer() {
         setSent(r);
         setWord(null);
       }
-      setSubmitted({ mode, q });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -315,8 +261,8 @@ export function Analyzer() {
   return (
     <div className="flex flex-col gap-4">
       <Notice kind="info" title="Tahlil qanday bajariladi">
-        Natijalar uch xil belgilanadi: <strong>lug‘at ma’lumoti</strong> (bazadagi o‘zak va turkum), <strong>qoidaviy natija</strong> (qo‘shimchalar va so‘z tartibi qoidalari) va{" "}
-        <strong>taxmin</strong>. Gap bo‘laklari faqat qo‘shimchaga qarab qat’iy belgilanmaydi — noaniq holatlarda muqobil talqin ham beriladi.
+        <strong>So‘z</strong> rejimi — so‘z tarkibi (o‘zak va qo‘shimchalar), bo‘g‘inlar, harf va tovushlar. <strong>Gap</strong> rejimi — gap bo‘laklari, so‘roqlari va
+        so‘zlar o‘rtasidagi bog‘lanish maktab grammatikasi bo‘yicha. Gap tahlil uchun tashqi xizmatga yuboriladi va saqlanmaydi.
       </Notice>
       <form onSubmit={run} className="glass flex flex-col gap-3 p-4 sm:p-5">
         <div role="radiogroup" aria-label="Tahlil turi" className="flex gap-1">
@@ -353,12 +299,7 @@ export function Analyzer() {
       {busy && <Spinner label="Tahlil qilinmoqda…" />}
       {error && <Notice kind="danger">{error}</Notice>}
       {word && <WordView r={word} />}
-      {sent && (
-        <>
-          <SentenceView r={sent} />
-          {submitted && <AiSentence sentence={submitted.q} />}
-        </>
-      )}
+      {sent && <SentenceView r={sent} />}
     </div>
   );
 }
