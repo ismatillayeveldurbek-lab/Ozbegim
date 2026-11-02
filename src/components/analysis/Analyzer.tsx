@@ -25,8 +25,10 @@ interface WordResult {
   lexiconFound: boolean;
 }
 interface SentenceResult {
+  sentence?: string;
   words: string[];
-  roles: Array<{ index: number; word: string; role: string; question: string; basis: string; explanation: string; alternative?: string; head?: number }>;
+  roles: Array<{ index: number; word: string; role: string; pos?: string; question: string; basis: string; explanation: string; alternative?: string; head?: number }>;
+  summary?: { maqsad: string; tuzilish: string; yoyiqlik: string; asos: string; izoh: string };
   links: Array<{ from: number; to: number; type: string }>;
   warnings: string[];
 }
@@ -158,15 +160,44 @@ function WordView({ r }: { r: WordResult }) {
   );
 }
 
-function SentenceView({ r }: { r: SentenceResult }) {
+/** Matnni gaplarga ajratadi (ko‘pi bilan 5 ta, har biri kamida 2 so‘z). */
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?…]+[.!?…]*/g) ?? [];
+  return parts.map((s) => s.trim()).filter((s) => (s.match(/\p{L}+/gu) ?? []).length >= 2).slice(0, 5);
+}
+
+function SentenceView({ r, title }: { r: SentenceResult; title?: string }) {
+  const s = r.summary;
   return (
     <div className="flex flex-col gap-4">
+      {title && <h3 className="text-lg font-bold">{title}</h3>}
+      {s && (
+        <section className="glass grid grid-cols-1 gap-3 p-5 sm:grid-cols-3">
+          <div>
+            <p className="text-sm font-semibold text-ink-muted">Maqsadga ko‘ra</p>
+            <p className="text-lg font-semibold">{s.maqsad} gap</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-ink-muted">Tuzilishiga ko‘ra</p>
+            <p className="text-lg font-semibold">
+              {s.tuzilish}
+              {s.tuzilish === "sodda" ? `, ${s.yoyiqlik}` : ""} gap
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-ink-muted">Grammatik asos</p>
+            <p className="text-lg font-semibold">{s.asos}</p>
+          </div>
+          {s.izoh && <p className="text-ink-soft sm:col-span-3">{s.izoh}</p>}
+        </section>
+      )}
       <section className="glass p-5">
         <p className="flex flex-wrap gap-x-3 gap-y-4 text-xl leading-loose">
           {r.roles.map((w) => (
             <span key={w.index} className="inline-flex flex-col items-center">
               <span className={`px-0.5 ${ROLE_STYLE[w.role] ?? ""}`}>{w.word}</span>
               <span className="text-xs font-semibold text-ink-muted">{ROLE_LABEL[w.role] ?? w.role}</span>
+              {w.pos && <span className="text-[0.7rem] text-ink-muted">{w.pos}</span>}
             </span>
           ))}
         </p>
@@ -188,6 +219,7 @@ function SentenceView({ r }: { r: SentenceResult }) {
               <p className="flex flex-wrap items-center gap-2">
                 <strong className="text-lg">{w.word}</strong>
                 <span className="chip text-ink-soft">{w.role === "noma’lum" ? "bo‘lak aniqlanmadi" : (ROLE_LABEL[w.role] ?? w.role)}</span>
+                {w.pos && <span className="chip text-ink-soft">{w.pos}</span>}
                 {w.question && <span className="text-sm text-ink-muted">so‘roq: {w.question}</span>}
                 {BASIS[w.basis] && <span className={`chip ${BASIS[w.basis].cls}`}>{BASIS[w.basis].text}</span>}
               </p>
@@ -217,7 +249,7 @@ export function Analyzer() {
   const [mode, setMode] = useState<"word" | "sentence">("word");
   const [q, setQ] = useState("");
   const [word, setWord] = useState<WordResult | null>(null);
-  const [sent, setSent] = useState<SentenceResult | null>(null);
+  const [sent, setSent] = useState<SentenceResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -227,22 +259,25 @@ export function Analyzer() {
     setBusy(true);
     setError(null);
     try {
-      // Gap: avval to‘liq tahlil (tashqi xizmat); xizmat ulanmagan yoki javob bermasa — qoidaviy tahlil
-      let r: WordResult & SentenceResult;
       if (mode === "sentence") {
-        try {
-          r = await api<WordResult & SentenceResult>("/api/ai/analyze", { method: "POST", json: { sentence: q } });
-        } catch (err) {
-          if ((err as { status?: number }).status === 400) throw err;
-          r = await api<WordResult & SentenceResult>(`/api/analyze?mode=sentence&q=${encodeURIComponent(q)}`);
-        }
-      } else r = await api<WordResult & SentenceResult>(`/api/analyze?mode=word&q=${encodeURIComponent(q)}`);
-      if (mode === "word") {
-        setWord(r);
-        setSent(null);
-      } else {
-        setSent(r);
+        // Har bir gap alohida: avval to‘liq tahlil (tashqi xizmat); ulanmagan yoki javob bermasa — qoidaviy tahlil
+        const list = splitSentences(q);
+        if (!list.length) throw new Error("Gap tahlili uchun kamida ikki so‘zli gap kiriting.");
+        const results = await Promise.all(
+          list.map(async (sentence) => {
+            try {
+              return { ...(await api<SentenceResult>("/api/ai/analyze", { method: "POST", json: { sentence } })), sentence };
+            } catch (err) {
+              if ((err as { status?: number }).status === 400) throw err;
+              return { ...(await api<SentenceResult>(`/api/analyze?mode=sentence&q=${encodeURIComponent(sentence)}`)), sentence };
+            }
+          }),
+        );
+        setSent(results);
         setWord(null);
+      } else {
+        setWord(await api<WordResult>(`/api/analyze?mode=word&q=${encodeURIComponent(q)}`));
+        setSent(null);
       }
     } catch (err) {
       setError((err as Error).message);
@@ -281,8 +316,8 @@ export function Analyzer() {
             className="field !text-lg"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={mode === "word" ? "Masalan: kitoblarimizdan" : "Masalan: Men bugun do‘stimga xat yozdim."}
-            maxLength={500}
+            placeholder={mode === "word" ? "Masalan: kitoblarimizdan" : "Masalan: Men bugun do‘stimga xat yozdim. (5 tagacha gap)"}
+            maxLength={mode === "word" ? 60 : 1500}
           />
           <button className="btn btn-primary !min-h-12 sm:w-40" disabled={busy}>
             <Microscope className="h-5 w-5" aria-hidden /> Tahlil qilish
@@ -292,7 +327,7 @@ export function Analyzer() {
       {busy && <Spinner label="Tahlil qilinmoqda…" />}
       {error && <Notice kind="danger">{error}</Notice>}
       {word && <WordView r={word} />}
-      {sent && <SentenceView r={sent} />}
+      {sent?.map((r, i) => <SentenceView key={i} r={r} title={sent.length > 1 ? `${i + 1}-gap: ${r.sentence}` : undefined} />)}
     </div>
   );
 }

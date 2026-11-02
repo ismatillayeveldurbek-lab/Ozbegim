@@ -22,7 +22,8 @@ export type SuggestionType =
   | "chiziqcha"
   | "bo_shliq"
   | "tinish"
-  | "aralash_yozuv";
+  | "aralash_yozuv"
+  | "grammatika";
 
 export const TYPE_LABEL: Record<SuggestionType, string> = {
   imlo: "Imlo xatosi",
@@ -35,6 +36,7 @@ export const TYPE_LABEL: Record<SuggestionType, string> = {
   bo_shliq: "Bo‘shliq",
   tinish: "Tinish belgisi",
   aralash_yozuv: "Aralash yozuv",
+  grammatika: "Grammatik xato",
 };
 
 const ogMissing = (correct: string): KnownError => ({ correct, type: "o_g_belgisi", note: "o‘ yoki g‘ harfi belgisiz yozilgan.", confidence: "aniq" });
