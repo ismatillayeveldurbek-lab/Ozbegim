@@ -27,6 +27,9 @@ Migratsiyalar konteyner ishga tushganda bajariladi (`scripts/start-prod.sh`).
 Sayt manzili: `https://ozbegim-xxxx.onrender.com`. `BETTER_AUTH_URL` berilmagan bo‘lsa shu manzil
 avtomatik ishlatiladi (`RENDER_EXTERNAL_URL`).
 
+Servis uxlab qolmasligi uchun o‘z manziliga har 10 daqiqada so‘rov yuboradi (`src/lib/server/keep-awake.ts`, o‘chirish: `KEEP_AWAKE=0`).
+Bu oyiga ~744 soat ishlaydi — bepul 750 soatga sig‘adi, lekin shu hisobdagi boshqa bepul servislar uchun soat qolmaydi.
+
 ## 2. Domen
 
 Servis → **Settings → Custom Domains → Add** → Render ko‘rsatgan CNAME/A yozuvini DNS’ga qo‘shing.

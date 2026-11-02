@@ -77,11 +77,11 @@ function typographicAnalysis(r: WordAnalysis): WordAnalysis {
 
 const CACHE_DAYS = 30;
 
-export async function analyzeWordAi(word: string): Promise<{ result: WordAnalysis; cached: boolean }> {
+export async function analyzeWordAi(word: string, userId?: string | null): Promise<{ result: WordAnalysis; cached: boolean }> {
   const key = normalizeKey(word);
   const hit = await prisma.aiWordCache.findUnique({ where: { key } });
   if (hit && hit.createdAt.getTime() > Date.now() - CACHE_DAYS * 86_400_000) return { result: typographicAnalysis(hit.result as unknown as WordAnalysis), cached: true };
-  const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000 });
+  const raw = await aiJson<unknown>(WORD_ANALYZER_PROMPT, word, undefined, { maxTokens: 2000, usage: { feature: "word", userId } });
   const result = normalizeWordAnalysis(raw);
   // Faqat topilgan so‘zlar keshlanadi (topilmaganlar keyinroq qayta urinib ko‘rilishi mumkin).
   if (result.found)

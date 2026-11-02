@@ -45,11 +45,11 @@ export function normalizeTranslation(raw: unknown): TranslationResult {
   return { source_language: p.data.source_language, translation: understood ? toTypographic(t) : NOT_UNDERSTOOD, understood };
 }
 
-export async function translateForTourist(text: string): Promise<TranslationResult> {
+export async function translateForTourist(text: string, userId?: string | null): Promise<TranslationResult> {
   const t = text.trim();
   // Bo‘sh yoki harf/raqamsiz matn AI’ga yuborilmaydi.
   if (!t || !/[\p{L}\p{N}]/u.test(t)) return { source_language: "", translation: NOT_UNDERSTOOD, understood: false };
   if (t.length > MAX_TRANSLATE_CHARS) throw new HttpError(400, `Matn juda uzun (${MAX_TRANSLATE_CHARS} belgigacha).`, "TOO_LONG");
-  const raw = await aiJson<unknown>(TRANSLATOR_PROMPT, t, undefined, { maxTokens: 8000 });
+  const raw = await aiJson<unknown>(TRANSLATOR_PROMPT, t, undefined, { maxTokens: 8000, usage: { feature: "translate", userId } });
   return normalizeTranslation(raw);
 }

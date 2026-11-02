@@ -10,6 +10,7 @@ const ITEMS = [
   { href: "/admin/import", label: "Import", admin: true },
   { href: "/admin/eksport", label: "Eksport va zaxira", admin: true },
   { href: "/admin/foydalanuvchilar", label: "Foydalanuvchilar", admin: true },
+  { href: "/admin/xarajat", label: "Xizmat xarajatlari", admin: true },
   { href: "/admin/audit", label: "Audit jurnali", admin: true },
 ];
 

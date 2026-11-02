@@ -38,6 +38,7 @@ model User {
   history         HistoryEntry[]
   auditLogs       AuditLog[]
   importJobs      ImportJob[]
+  aiUsage         AiUsage[]
 
   @@map("user")
 }
@@ -596,4 +597,24 @@ model StoredBlob {
   key       String   @id
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+/// Tashqi tahlil xizmatlari sarfi: kim, qaysi bo‘lim, model, tokenlar va taxminiy narx. Matn saqlanmaydi.
+model AiUsage {
+  id           String   @id @default(cuid())
+  /// null — tizimga kirmagan foydalanuvchi
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// spelling | analyze | word | translate
+  feature      String
+  /// gemini | openai | anthropic
+  provider     String
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Float
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }

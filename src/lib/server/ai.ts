@@ -7,6 +7,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { parseAiJson } from "@/lib/ai-json";
+import { prisma } from "./db";
 import { HttpError } from "./http";
 
 let client: Anthropic | null = null;
@@ -37,11 +38,44 @@ const PROVIDER_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS ?? 25_000);
 const cooldownUntil = new Map<Provider, number>();
 const COOLDOWN_MS: Record<string, number> = { AI_RATE_LIMIT: 15 * 60_000, AI_AUTH: 30 * 60_000, AI_ERROR: 2 * 60_000 };
 
+type Usage = { model: string; input: number; output: number };
+type Reply = { text: string; usage: Usage };
+export type UsageTag = { feature: "spelling" | "analyze" | "word" | "translate"; userId?: string | null };
+
+/** Narx, USD / 1 mln token [kirish, chiqish]. Taxminiy — aniq hisob xizmatning o‘z panelida. Env bilan o‘zgartiriladi. */
+function priceFor(provider: Provider, model: string): [number, number] {
+  const env = (k: string) => (process.env[k] ? Number(process.env[k]) : undefined);
+  const pick = (prefix: string, def: [number, number]): [number, number] => [env(`${prefix}_PRICE_IN`) ?? def[0], env(`${prefix}_PRICE_OUT`) ?? def[1]];
+  if (provider === "gemini") return pick("GEMINI", /lite/i.test(model) ? [0.25, 1.5] : [0.5, 3]);
+  if (provider === "openai") return pick("LLM", [0, 0]); // Groq bepul tarifi
+  return pick("ANTHROPIC", [0, 0]);
+}
+
+/** Sarf bazaga yoziladi (matnsiz: faqat kim, qaysi bo‘lim, model va token soni). Xato so‘rovni buzmaydi. */
+async function recordUsage(tag: UsageTag | undefined, provider: Provider, u: Usage) {
+  const [pin, pout] = priceFor(provider, u.model);
+  try {
+    await prisma.aiUsage.create({
+      data: {
+        userId: tag?.userId ?? null,
+        feature: tag?.feature ?? "boshqa",
+        provider,
+        model: u.model,
+        inputTokens: u.input,
+        outputTokens: u.output,
+        costUsd: (u.input * pin + u.output * pout) / 1_000_000,
+      },
+    });
+  } catch (e) {
+    console.error("AI sarfi yozilmadi:", e instanceof Error ? e.message : e);
+  }
+}
+
 /**
  * @param schema berilsa — strukturali chiqish (output_config.format); berilmasa — javob matni
  *   ko‘rsatma bo‘yicha JSON deb kutiladi va xavfsiz parse qilinadi.
  */
-export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number } = {}): Promise<T> {
+export async function aiJson<T>(system: string, user: string, schema?: Record<string, unknown>, opts: { maxTokens?: number; usage?: UsageTag } = {}): Promise<T> {
   const providers = aiProviders();
   if (!providers.length) throw new HttpError(503, "Xizmat ulanmagan.", "AI_NOT_CONNECTED");
   // Hammasi "dam olayotgan" bo‘lsa — baribir hammasi sinaladi
@@ -50,8 +84,9 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
   for (const provider of ready.length ? ready : providers) {
     const started = Date.now();
     try {
-      const text =
+      const { text, usage } =
         provider === "gemini" ? await geminiText(system, user, schema, opts) : provider === "openai" ? await openaiText(system, user, schema, opts) : await anthropicText(system, user, schema, opts);
+      await recordUsage(opts.usage, provider, usage);
       const parsed = parseAiJson(text);
       if (parsed === null || typeof parsed !== "object") throw new HttpError(502, "Javobni o‘qib bo‘lmadi. Qayta urinib ko‘ring.", "AI_BAD_JSON");
       console.log(`AI: "${provider}" ${Date.now() - started} ms`);
@@ -68,7 +103,7 @@ export async function aiJson<T>(system: string, user: string, schema?: Record<st
 }
 
 /** OpenAI bilan mos Chat Completions API (Groq, OpenRouter, Cerebras, Mistral va h.k.). */
-async function openaiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }) {
+async function openaiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
   const base = (process.env.LLM_BASE_URL || "https://api.groq.com/openai/v1").replace(/\/$/, "");
   const sys = schema ? `${system}\n\nJavobni faqat JSON ko‘rinishida, quyidagi JSON Schema bo‘yicha qaytaring:\n${JSON.stringify(schema)}` : `${system}\n\nJavobni faqat JSON ko‘rinishida qaytaring.`;
   const send = (jsonMode: boolean) =>
@@ -103,14 +138,21 @@ async function openaiText(system: string, user: string, schema: Record<string, u
     if (res.status === 401 || res.status === 403) throw new HttpError(503, "Xizmat noto‘g‘ri sozlangan.", "AI_AUTH");
     throw new HttpError(502, "Xizmatdan javob olinmadi.", "AI_ERROR");
   }
-  const data = (await res.json()) as { choices?: Array<{ finish_reason?: string; message?: { content?: string | null } }> };
+  const data = (await res.json()) as {
+    model?: string;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    choices?: Array<{ finish_reason?: string; message?: { content?: string | null } }>;
+  };
   const choice = data.choices?.[0];
   if (choice?.finish_reason === "length") throw new HttpError(422, "Matn juda uzun — javob to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
   if (choice?.finish_reason === "content_filter") throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");
-  return choice?.message?.content ?? "";
+  return {
+    text: choice?.message?.content ?? "",
+    usage: { model: data.model || LLM_MODEL(), input: data.usage?.prompt_tokens ?? 0, output: data.usage?.completion_tokens ?? 0 },
+  };
 }
 
-async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }) {
+async function anthropicText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
   client ??= new Anthropic();
   let response;
   try {
@@ -132,10 +174,15 @@ async function anthropicText(system: string, user: string, schema: Record<string
   }
   if (response.stop_reason === "refusal") throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");
   if (response.stop_reason === "max_tokens") throw new HttpError(422, "Matn juda uzun — javob to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
-  return response.content.map((b) => (b.type === "text" ? b.text : "")).join("");
+  return {
+    text: response.content.map((b) => (b.type === "text" ? b.text : "")).join(""),
+    usage: { model: response.model, input: response.usage.input_tokens, output: response.usage.output_tokens },
+  };
 }
 
 type GeminiResponse = {
+  modelVersion?: string;
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
   candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
   promptFeedback?: { blockReason?: string };
 };
@@ -144,7 +191,7 @@ type GeminiResponse = {
  * Gemini generateContent (REST). Tezlik uchun fikrlash darajasi past ("low", GEMINI_THINKING bilan o‘zgaradi).
  * 400 bo‘lsa — avval thinkingConfig’siz, so‘ng schema’siz qayta so‘raladi; 5xx bo‘lsa — 1 marta qayta urinish.
  */
-async function geminiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }) {
+async function geminiText(system: string, user: string, schema: Record<string, unknown> | undefined, opts: { maxTokens?: number }): Promise<Reply> {
   const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
   const thinking = process.env.GEMINI_THINKING ?? "low";
   const send = (withThinking: boolean, withSchema: boolean) =>
@@ -197,5 +244,10 @@ async function geminiText(system: string, user: string, schema: Record<string, u
   if (data.promptFeedback?.blockReason || ["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"].includes(cand?.finishReason ?? ""))
     throw new HttpError(422, "Bu so‘rovni bajarib bo‘lmadi.", "AI_REFUSAL");
   if (cand?.finishReason === "MAX_TOKENS") throw new HttpError(422, "Matn juda uzun — javob to‘liq emas. Qisqaroq qism yuboring.", "AI_TRUNCATED");
-  return (cand?.content?.parts ?? []).map((p) => (p.thought ? "" : (p.text ?? ""))).join("");
+  const um = data.usageMetadata;
+  return {
+    text: (cand?.content?.parts ?? []).map((p) => (p.thought ? "" : (p.text ?? ""))).join(""),
+    // Fikrlash tokenlari ham chiqish narxida hisoblanadi
+    usage: { model: data.modelVersion || GEMINI_MODEL(), input: um?.promptTokenCount ?? 0, output: (um?.candidatesTokenCount ?? 0) + (um?.thoughtsTokenCount ?? 0) },
+  };
 }

@@ -12,6 +12,6 @@ export const POST = handle(async (req: Request) => {
   const user = await getCurrentUser(req.headers);
   if (user) await enforceRateLimit(`wa:user:${user.id}`, 60, 3600);
   else await enforceRateLimit(`wa:ip:${clientIp(req)}`, 20, 3600);
-  const { result, cached } = await analyzeWordAi(word);
+  const { result, cached } = await analyzeWordAi(word, user?.id);
   return json({ word, result, cached, label: "Taxmin" });
 });

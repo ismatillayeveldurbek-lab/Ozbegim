@@ -11,5 +11,5 @@ export const POST = handle(async (req: Request) => {
   const user = await getCurrentUser(req.headers);
   if (user) await enforceRateLimit(`tr:user:${user.id}`, 100, 3600);
   else await enforceRateLimit(`tr:ip:${clientIp(req)}`, 30, 3600);
-  return json(await translateForTourist(body.text));
+  return json(await translateForTourist(body.text, user?.id));
 });
