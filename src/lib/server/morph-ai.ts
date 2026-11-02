@@ -49,7 +49,9 @@ Qoidalar:
 - "affixes" — o‘zakdan keyingi qo‘shimchalar tartib bilan: "form" — qo‘shimchaning o‘zi (chiziqchasiz, masalan "lar", "imiz", "dan"), "kind" — so‘z yasovchi, lug‘aviy shakl yasovchi (ko‘plik, kichraytirish, nisbat, bo‘lishsizlik, sifatdosh/ravishdosh/harakat nomi va h.k.) yoki sintaktik shakl yasovchi (kelishik, egalik, shaxs-son, zamon, mayl), "name" — aniq vazifasi, masalan "ko‘plik qo‘shimchasi", "1-shaxs ko‘plik egalik qo‘shimchasi", "chiqish kelishigi".
 - O‘zakning o‘zi bo‘lgan so‘zlarni (masalan, "masalan", "lekin", "albatta", "kitob") qo‘shimchaga bo‘lma — "affixes": [].
 - O‘zlashma va tub so‘zlarni soxta qo‘shimchalarga ajratma: "masalan" — modal so‘z (arabcha), "masa"+"lan" emas.
-- "pos" — so‘z turkumi (sifatdosh, ravishdosh, harakat nomi — fe’l); "meaning" — o‘zakning (yasama bo‘lsa, butun so‘zning) qisqa lug‘aviy ma’nosi.
+- "pos" — BUTUN so‘zning turkumi, o‘zakniki emas: yasama so‘zda yasovchi qo‘shimcha hosil qilgan turkum ("o‘qituvchi" — ot, "chiroyli" — sifat, "ishla" — fe’l);
+  sifatdosh, ravishdosh, harakat nomi — fe’l. "meaning" — butun so‘zning qisqa lug‘aviy ma’nosi (yasama bo‘lsa, yasalgan so‘zniki).
+- Omonimlarni (bir xil yozilgan, ma’nosi boshqa) faqat turkumi yoki tuzilishi farq qilsa alohida tahlil qil; bir turkumdagi turli ma’nolarni bitta tahlilning "meaning"ida "1) …; 2) …" deb ber.
 - So‘z haqiqatan ham ikki xil tuzilish yoki turkumda bo‘lishi mumkin bo‘lsa (masalan, "ot" — ot/fe’l, "uchar"), har birini alohida tahlil sifatida ber, eng keng tarqalganini birinchi; aks holda faqat bitta tahlil.
 - "note" — ixtiyoriy izoh (tovush o‘zgarishi, qo‘llanish) yoki "".
 Barcha matn o‘zbek lotin yozuvida. Aniq javob ber.`;
@@ -59,7 +61,7 @@ export interface MorphResult {
 }
 
 const CACHE_DAYS = 30;
-const PROMPT_VERSION = 1;
+const PROMPT_VERSION = 2;
 const cacheTag = () => `${AI_MODEL()}|v${PROMPT_VERSION}`;
 
 export async function analyzeMorphAi(input: unknown, userId?: string | null): Promise<MorphResult> {
