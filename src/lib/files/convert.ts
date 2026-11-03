@@ -9,6 +9,7 @@ import { transliterate, type Direction } from "@/lib/uz/translit";
 import { decodeText, FileRejectError, type FileFormat } from "./detect";
 import { convertOffice, officeSampleText } from "./formats/office";
 import { extractPdfText } from "./formats/pdf";
+import { convertPdfLayout } from "./formats/pdf-layout";
 import { convertCsv, convertSrt, convertVtt } from "./formats/text-formats";
 import { ocrStatus, runOcr, runPdfOcr } from "./ocr";
 
@@ -30,6 +31,7 @@ const MIME: Record<string, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  pdf: "application/pdf",
 };
 
 export function outputName(original: string, direction: Direction, ext?: string): string {
@@ -103,6 +105,22 @@ export async function convertFile(format: FileFormat, name: string, buf: Buffer,
         };
       }
       const direction = resolveDirection(opts.direction, r.text);
+      // Avval asl ko‘rinishni saqlab o‘girish; PDF matni ishonchli o‘qilmasa — matnni ajratib tekshirishga beriladi
+      try {
+        const out = await convertPdfLayout(buf, { direction, apostrophe: opts.apostrophe, protect: opts.protect });
+        return {
+          kind: "file",
+          data: out.data,
+          fileName: outputName(name, direction),
+          mime: MIME.pdf,
+          warnings: [
+            "Sahifa joylashuvi, rasmlar, jadvallar va ranglar saqlandi. PDF ichidagi asl shriftlarda boshqa alifbo harflari bo‘lmagani uchun matn o‘lchami mos (Times, Arial, Calibri bilan bir xil) shriftlarda yozildi.",
+          ],
+          direction,
+        };
+      } catch (e) {
+        console.error("[pdf] joylashuvni saqlab o‘girib bo‘lmadi:", (e as Error)?.name, (e as Error)?.message?.slice(0, 120));
+      }
       return {
         kind: "review",
         originalText: r.text,

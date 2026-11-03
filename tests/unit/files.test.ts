@@ -193,7 +193,7 @@ describe("Subtitrlar", () => {
 });
 
 describe("PDF", () => {
-  it("matnli PDF’dan matn ajratiladi va tekshirish uchun qaytariladi", async () => {
+  it("matnli PDF asl joylashuvni saqlab o‘giriladi (PDF qaytadi)", async () => {
     const doc = await PDFDocument.create();
     const page = doc.addPage([400, 300]);
     const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -202,10 +202,14 @@ describe("PDF", () => {
     const buf = Buffer.from(await doc.save());
     expect(detectFile("a.pdf", buf).format).toBe("pdf");
     const r = await convertFile("pdf", "a.pdf", buf, { direction: "auto" });
-    expect(r.kind).toBe("review");
-    if (r.kind !== "review") return;
-    expect(r.originalText).toContain("Shahar markazida");
-    expect(r.text).toContain("Шаҳар марказида");
+    expect(r.kind).toBe("file");
+    if (r.kind !== "file") return;
+    expect(r.mime).toBe("application/pdf");
+    expect(r.fileName).toBe("a.kirill.pdf");
+    const { extractPdfText } = await import("@/lib/files/formats/pdf");
+    const out = await extractPdfText(r.data);
+    expect(out.text).toContain("Шаҳар марказида");
+    expect(out.text).not.toContain("Shahar markazida");
   });
   it.skipIf(!!process.env.OCR_PROVIDER)("matnsiz (skanerlangan) PDF OCR xizmati ulanmaganini aytadi", async () => {
     const doc = await PDFDocument.create();

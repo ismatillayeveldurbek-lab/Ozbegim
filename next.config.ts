@@ -13,9 +13,9 @@ const nextConfig: NextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   agentRules: false,
   outputFileTracingIncludes: {
-    "/api/**/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
+    "/api/**/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", "./assets/fonts/*.ttf"],
   },
-  serverExternalPackages: ["pdfjs-dist", "exceljs", "@prisma/adapter-pg", "pg"],
+  serverExternalPackages: ["pdfjs-dist", "exceljs", "@prisma/adapter-pg", "pg", "@pdf-lib/fontkit"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
