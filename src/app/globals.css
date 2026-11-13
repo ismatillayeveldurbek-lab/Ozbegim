@@ -243,6 +243,59 @@ body {
   outline: 2px solid var(--focus);
 }
 
+/* Gap bo‘laklari ostidagi chiziqlar (maktab an’anasi):
+   ega — bitta chiziq, kesim — ikki chiziq, aniqlovchi — to‘lqinli chiziq,
+   to‘ldiruvchi — uzuq chiziq, hol — chiziq-nuqta. Chiziq ::after qatlamida
+   matn rangida (currentColor) mask orqali chiziladi, shuning uchun tungi rejimda ham ko‘rinadi. */
+.gb {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 9px;
+}
+.gb::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  background-color: currentColor;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: left bottom;
+  mask-position: left bottom;
+}
+.gb-ega::after {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 5px, #000 5px);
+  mask-image: linear-gradient(to bottom, transparent 5px, #000 5px);
+}
+.gb-kesim::after {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 2px, transparent 2px 5px, #000 5px);
+  mask-image: linear-gradient(to bottom, #000 0 2px, transparent 2px 5px, #000 5px);
+}
+.gb-aniqlovchi::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M0 3.5 Q3 0 6 3.5 T12 3.5' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M0 3.5 Q3 0 6 3.5 T12 3.5' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E");
+  -webkit-mask-size: 12px 7px;
+  mask-size: 12px 7px;
+}
+.gb-toldiruvchi::after {
+  -webkit-mask-image: linear-gradient(to right, #000 0 8px, transparent 8px 13px), linear-gradient(to bottom, transparent 5px, #000 5px);
+  mask-image: linear-gradient(to right, #000 0 8px, transparent 8px 13px), linear-gradient(to bottom, transparent 5px, #000 5px);
+  -webkit-mask-size: 13px 7px, 100% 7px;
+  mask-size: 13px 7px, 100% 7px;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.gb-hol::after {
+  -webkit-mask-image: linear-gradient(to right, #000 0 10px, transparent 10px 14px, #000 14px 17px, transparent 17px 21px), linear-gradient(to bottom, transparent 5px, #000 5px);
+  mask-image: linear-gradient(to right, #000 0 10px, transparent 10px 14px, #000 14px 17px, transparent 17px 21px), linear-gradient(to bottom, transparent 5px, #000 5px);
+  -webkit-mask-size: 21px 7px, 100% 7px;
+  mask-size: 21px 7px, 100% 7px;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
 }
 
 @keyframes rise {

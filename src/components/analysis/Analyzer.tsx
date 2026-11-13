@@ -37,13 +37,30 @@ const BASIS: Record<string, { text: string; cls: string }> = {
   "lug‘at": { text: "Lug‘at ma’lumoti", cls: "bg-accent-soft text-accent" },
   qoida: { text: "Qoidaviy natija", cls: "bg-info-soft text-info" },
 };
+// Maktab an’anasi: ega — bitta chiziq, kesim — ikki chiziq, aniqlovchi — to‘lqinli,
+// to‘ldiruvchi — uzuq chiziq, hol — chiziq-nuqta (chiziqlar globals.css dagi .gb-* sinflarida).
 const ROLE_STYLE: Record<string, string> = {
-  ega: "border-b-2 border-ink",
-  kesim: "border-b-4 border-double border-ink",
-  aniqlovchi: "border-b-2 border-wavy border-ink",
-  "to‘ldiruvchi": "border-b-2 border-dashed border-ink",
-  hol: "border-b-2 border-dotted border-ink",
+  ega: "gb gb-ega",
+  kesim: "gb gb-kesim",
+  aniqlovchi: "gb gb-aniqlovchi",
+  "to‘ldiruvchi": "gb gb-toldiruvchi",
+  hol: "gb gb-hol",
 };
+const LEGEND: Array<[string, string]> = [
+  ["ega", "bitta chiziq"],
+  ["kesim", "ikki chiziq"],
+  ["aniqlovchi", "to‘lqinli chiziq"],
+  ["to‘ldiruvchi", "uzuq chiziq"],
+  ["hol", "chiziq-nuqta"],
+];
+
+/** Yordamchi so‘z (ko‘makchi, yuklama) o‘zi bog‘langan so‘z bilan bitta bo‘lak: chizig‘i ham o‘shanikidek. */
+function lineRole(w: { role: string; head?: number; pos?: string }, roles: Array<{ index: number; role: string }>): string {
+  if (w.role !== "yordamchi" || w.head === undefined || w.head < 0) return w.role;
+  // Bog‘lovchi (va, lekin, ammo…) hech qaysi bo‘lakka qo‘shilmaydi — tagiga chiziq chizilmaydi
+  if (w.pos && /bog‘lovchi/.test(w.pos)) return w.role;
+  return roles.find((x) => x.index === w.head)?.role ?? w.role;
+}
 const ROLE_LABEL: Record<string, string> = { "noma’lum": "—", yordamchi: "yordamchi so‘z" };
 const LINK: Record<string, string> = { predikativ: "predikativ (ega — kesim)", moslashuv: "moslashuv", boshqaruv: "boshqaruv", bitishuv: "bitishuv" };
 
@@ -195,15 +212,24 @@ function SentenceView({ r, title }: { r: SentenceResult; title?: string }) {
         <p className="flex flex-wrap gap-x-3 gap-y-4 text-xl leading-loose">
           {r.roles.map((w) => (
             <span key={w.index} className="inline-flex flex-col items-center">
-              <span className={`px-0.5 ${ROLE_STYLE[w.role] ?? ""}`}>{w.word}</span>
+              <span className={`px-0.5 ${ROLE_STYLE[lineRole(w, r.roles)] ?? ""}`}>{w.word}</span>
               <span className="text-xs font-semibold text-ink-muted">{ROLE_LABEL[w.role] ?? w.role}</span>
               {w.pos && <span className="text-[0.7rem] text-ink-muted">{w.pos}</span>}
             </span>
           ))}
         </p>
-        <p className="mt-3 text-sm text-ink-muted">
-          Chiziqlar maktab an’anasiga ko‘ra: ega — bitta chiziq, kesim — ikki chiziq, aniqlovchi — to‘lqinli, to‘ldiruvchi — uzuq, hol — nuqtali. Har bir so‘z ostida bo‘lak nomi
-          matn bilan ham yozilgan.
+        <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted" aria-label="Chiziqlar izohi">
+          {LEGEND.map(([role, name]) => (
+            <li key={role} className="inline-flex items-center gap-2">
+              <span className={`${ROLE_STYLE[role]} w-10`} aria-hidden="true" />
+              <span>
+                <b className="text-ink-soft">{role}</b> — {name}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-sm text-ink-muted">
+          Undalma, kirish so‘z va bog‘lovchilar gap bo‘lagi emas, shuning uchun ularning tagiga chiziq chizilmaydi. Har bir so‘z ostida bo‘lak nomi matn bilan ham yozilgan.
         </p>
       </section>
       {r.warnings.filter((w) => !w.includes("Taxmin")).map((w) => (
